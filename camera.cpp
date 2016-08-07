@@ -12,7 +12,7 @@ Camera::Camera()
     cout << "Using device " << camera.GetDeviceInfo().GetModelName() << endl;
 
     // Register an image event handler that accesses the chunk data.
-    camera.RegisterImageEventHandler( new CSampleImageEventHandler, RegistrationMode_Append, Cleanup_Delete);
+    camera.RegisterImageEventHandler(new CSampleImageEventHandler, RegistrationMode_Append, Cleanup_Delete);
     
     converter.OutputPixelFormat = PixelType_BGR8packed;// PixelType_Mono8
     // Open the camera.
@@ -28,17 +28,16 @@ Camera::Camera()
     //cout << camera.InternalGrabEngineThreadPriorityOverride() << endl;
 }
 
-Mat Camera::grab_image()
+uint8_t* Camera::grab_image()
 {
         if (camera.IsGrabbing())
         {
             // Wait for an image and then retrieve it. A timeout of 5000 ms is used.
-            high_resolution_clock::time_point t1 = high_resolution_clock::now();
 
-            camera.RetrieveResult( 5000, ptrGrabResult, TimeoutHandling_ThrowException);
+            camera.RetrieveResult(5000, ptrGrabResult, TimeoutHandling_ThrowException);
 
             //cout << GetRTThreadPriority(GetCurrentThreadHandle()) << endl;
-            converter.Convert( pylon_img, ptrGrabResult);
+            converter.Convert(pylon_img, ptrGrabResult);
 
             // Image grabbed successfully?
             if (ptrGrabResult->GrabSucceeded())
@@ -46,17 +45,11 @@ Mat Camera::grab_image()
 				if (IsReadable(ptrGrabResult->ChunkTimestamp))
 					TimeStamp = ptrGrabResult->ChunkTimestamp.GetValue();
 				cout << "Difference in grabbing time " << (TimeStamp - TimeStampPrev) / 1000 << endl;
-
             }
-            high_resolution_clock::time_point t2 = high_resolution_clock::now();
-            Duration = duration_cast<microseconds>( t2 - t1 ).count();
-            //cout << Duration << endl;
+            
             TimeStampPrev = TimeStamp;
-            //Convert to OpenCV format
-            opencv_img = cv::Mat(ptrGrabResult->GetHeight(), ptrGrabResult->GetWidth(), CV_8UC3,
-            	static_cast<uint8_t*>(pylon_img.GetBuffer()));
          }
-         return opencv_img;
+         return static_cast<uint8_t*>(pylon_img.GetBuffer());
 }
 
 Camera::~Camera()

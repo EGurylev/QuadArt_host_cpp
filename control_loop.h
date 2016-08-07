@@ -1,7 +1,8 @@
+/*
+Control loop interface
+*/
+
 #pragma once
-#include <fstream>
-#include <vector>
-#include <chrono>
 #include <iostream>
 #include <QtCore/QObject>
 #include <QtGui/QImage>
@@ -10,6 +11,7 @@
 #include <QtWidgets/QLabel>
 #include <QtCore/QTimer>
 #include "camera.h"
+#include "img_proc.h"
 
 class Loop : public QObject
 {
@@ -17,16 +19,13 @@ class Loop : public QObject
 	private:
 		QTimer loop_timer;
 		Camera cam_obj;
-		Mat img;
+		uint8_t* img_p;
 		int timer_period = 10;
-		int cnt = 0;
-		int num_debug_img = 50;
-		vector<Mat> img_array;
 		QLabel img_label;
+		img_proc img_proc_obj;
 	public:
 		Loop();
 		void run();
-		void save_img_debug();
 		~Loop();
 	public slots:
         void update();
