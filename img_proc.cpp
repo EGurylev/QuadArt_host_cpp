@@ -6,6 +6,7 @@ img_proc::img_proc()
 	area_prev = marker_size * marker_size;
 	marker_coord.resize(2);
 	marker_coord[0] = img_width / 2;
+	corner_coord.resize(4, vector<int>(2));
 }
 
 void img_proc::marker_search(uint8_t* input_img)
@@ -181,16 +182,70 @@ void img_proc::find_corners(vector<int>& x, vector<int>& y, Size frame_size)
            	[](const vector<int>& a, const vector<int>& b)
             {
   				return a[0] > b[0];
-			});		
+			});
+			
+		//Remove N - 4 contours with smallest area
+		if (cont_param.size() > 4)
+			for (int i = 0; i < (cont_param.size() - 4); i++)
+				cont_param.pop_back();
+		
 		cout << "Sorted vector" << endl;
 		for (int i = 0; i < cont_param.size();i++)
 		{
-			int a,b,c;
-			a = cont_param[i][0];
-			b = cont_param[i][1];
-			c = cont_param[i][2];
+			int a = cont_param[i][0];
+			int b = cont_param[i][1];
+			int c = cont_param[i][2];
 			cout << a << " " << b << " " << c << endl;
 		}
+		
+		//Vector for holding corner coordinates
+		vector<vector<int>> corner_coord_temp;
+		for (int i = 0; i < 4; i++)
+		{
+			vector<int> temp;
+			temp.push_back(cont_param[i][1]);//x
+			temp.push_back(cont_param[i][2]);//y
+			corner_coord_temp.push_back(temp);
+		}
+		
+		cout << "Temporal vector" << endl;
+		for (int i = 0; i < corner_coord_temp.size();i++)
+		{
+			int x = corner_coord_temp[i][0];
+			int y = corner_coord_temp[i][1];
+			cout << x << " " << y << endl;
+		}
+		
+		//Todo: reconsider new coordinate system relative to current marker_coord
+		if (marker_found_prev)
+		{
+			//Reorder corner points for pose estimation algorithm
+			for (int i = 0; i < 4; i++)
+			{
+				if (corner_coord_temp[i][0] < frame_size.width / 2 and
+					corner_coord_temp[i][1] < frame_size.height / 2)
+						corner_coord[0] = corner_coord_temp[i];//top left
+					
+				if (corner_coord_temp[i][0] > frame_size.width / 2 and
+					corner_coord_temp[i][1] < frame_size.height / 2)
+						corner_coord[1] = corner_coord_temp[i];//top right
+					
+				if (corner_coord_temp[i][0] < frame_size.width / 2 and
+					corner_coord_temp[i][1] > frame_size.height / 2)
+						corner_coord[2] = corner_coord_temp[i];//bottom left
+					
+				if (corner_coord_temp[i][0] > frame_size.width / 2 and
+					corner_coord_temp[i][1] > frame_size.height / 2)
+						corner_coord[3] = corner_coord_temp[i];//bottom right
+			}
+		}
+			
+		/*for (int i = 0; i < corner_coord.size();i++)
+		{
+			int x = corner_coord[i][0];
+			int y = corner_coord[i][1];
+			cout << x << " " << y << endl;
+		}*/
     }
     
 }

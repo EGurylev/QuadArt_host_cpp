@@ -19,23 +19,24 @@ class img_proc
 		double area_prev;
 		double perimeter_prev = 160;
 		const double win_scale = 3;
+		double const diff_thresh = 0.2;
 		bool marker_found_prev = false;
 		vector<int> marker_coord;
+		int marker_size;
 		Mat img;
-		double const diff_thresh = 0.2;
+		void find_marker();
+		void track_marker();
+		void find_corners(vector<int>& x, vector<int>& y, Size frame_size);
+		void mean_shift(Mat frame);
+		void save_img_debug();
+		//debug vars
 		int cnt = 0;
 		int num_debug_img = 50;
 		vector<Mat> img_array;
         double Duration;
 	public:
 		bool marker_found = false;
-		vector<int> corner_coord;
-		int marker_size;
+		vector<vector<int>> corner_coord;	
 		img_proc();
 		void marker_search(uint8_t* input_img);
-		void find_marker();
-		void track_marker();
-		void find_corners(vector<int>& x, vector<int>& y, Size frame_size);
-		void mean_shift(Mat frame);
-		void save_img_debug();
 };
