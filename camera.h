@@ -34,14 +34,14 @@ public:
         // Before accessing the chunk data, you should check to see
         // if the chunk is readable. When it is readable, the buffer
         // contains the requested chunk data.
-        if ( IsReadable( chunkTimestamp))
-            cout << "OnImageGrabbed: TimeStamp (Result) accessed via node map: " << chunkTimestamp->GetValue() << endl;
+        //if ( IsReadable( chunkTimestamp))
+            //cout << "OnImageGrabbed: TimeStamp (Result) accessed via node map: " << chunkTimestamp->GetValue() << endl;
 
         // Native parameter access:
         // When using the device specific grab results the chunk data can be accessed
         // via the members of the grab result data.
-        if ( IsReadable(ptrGrabResult->ChunkTimestamp))
-            cout << "OnImageGrabbed: TimeStamp (Result) accessed via result member: " << ptrGrabResult->ChunkTimestamp.GetValue() << endl;
+        //if ( IsReadable(ptrGrabResult->ChunkTimestamp))
+            //cout << "OnImageGrabbed: TimeStamp (Result) accessed via result member: " << ptrGrabResult->ChunkTimestamp.GetValue() << endl;
     }
 };
   
