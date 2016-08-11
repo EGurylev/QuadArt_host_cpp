@@ -4,9 +4,9 @@ img_proc::img_proc()
 {
 	marker_size = perimeter_prev / 4;
 	area_prev = marker_size * marker_size;
-	marker_coord.resize(2);
-	marker_coord[0] = img_width / 2;
-	corner_coord.resize(4, vector<int>(2));
+	marker_coord.x = img_width / 2;
+	marker_coord.y = img_height / 2;
+	corner_coord.resize(4);
 }
 
 void img_proc::marker_search(uint8_t* input_img)
@@ -25,22 +25,66 @@ void img_proc::marker_search(uint8_t* input_img)
     auto epoch = now_ms.time_since_epoch();
     auto value = std::chrono::duration_cast<std::chrono::milliseconds>(epoch);
     long duration = value.count();
-    putText(img, to_string(duration), Point2f(500, 500),  FONT_HERSHEY_SIMPLEX, 2.0, Scalar(255,255,255), 2);
-	if (cnt < num_debug_img)
+    putText(img, to_string(duration), Point2f(100, 500),  FONT_HERSHEY_SIMPLEX, 2.0, Scalar(255,255,255), 2);
+	if (marker_found)
+	{
 		img_array.push_back(img.clone());
-	else if (cnt == num_debug_img)//very bad
+		cnt += 1;
+	}
+	if (cnt == num_debug_img)//very bad
 		save_img_debug();
-	cnt += 1;
+	
+	
+	marker_found_prev = marker_found;
+	cout << marker_found << endl;
 }
 
 void img_proc::find_marker()
 {
 	mean_shift(img);
+	if (marker_found)
+	{
+		for (int i = 0; i < 4; i++)
+			circle(img, corner_coord[i], 3, Scalar(0, 255, 0), -1);
+	}
 }
 
 void img_proc::track_marker()
 {
-
+	marker_size = perimeter_prev / 4;
+	//Set ROI near found marker from previous iteration
+	int x = marker_coord.x - static_cast<int>(win_scale * marker_size / 2);
+    int y = marker_coord.y - static_cast<int>(win_scale * marker_size / 2);   
+    if (y < 0)
+		y = 0;
+    if (x < 0)
+    	x = 0;
+    
+    int size = static_cast<int>(win_scale * marker_size);
+    Rect roi(x, y, size, size);
+    Mat marker_frame = img(roi);
+    
+    //marker_coord.x -= x;
+    //marker_coord.y -= y;
+    
+    mean_shift(marker_frame);
+    //Back to global coordinates
+    marker_coord.x += x;
+    marker_coord.y += y;
+    for (int i = 0; i < 4; i++)
+    {
+    	corner_coord[i].x += x;
+    	corner_coord[i].y += y;
+    }
+	
+	if (marker_found)
+	{
+		rectangle(img, roi, Scalar(255), 1, 8, 0);
+		for (int i = 0; i < 4; i++)
+			circle(img, corner_coord[i], 3, Scalar(0, 255, 0), -1);
+	}
+		
+	
 }
 
 void img_proc::mean_shift(Mat frame)
@@ -92,8 +136,8 @@ void img_proc::mean_shift(Mat frame)
     //Contour of interest
     auto cont_min = contours[idx];
     
-    cout << contours[idx] << endl;
-    cout << contours[idx].size() << endl;
+    //cout << contours[idx] << endl;
+    //cout << contours[idx].size() << endl;
     
     //Individual vectors for holding x and y coordinates #todo: make a function
     vector<int> x_coord(cont_min.size()), y_coord(cont_min.size());
@@ -103,16 +147,16 @@ void img_proc::mean_shift(Mat frame)
     	y_coord[i] = cont_min[i].y;
     }
     //Coordinates of a marker's center
-    marker_coord[0] = accumulate(x_coord.begin(), x_coord.end(), 0) / x_coord.size();
-    marker_coord[1] = accumulate(y_coord.begin(), y_coord.end(), 0) / y_coord.size();
+    marker_coord.x = accumulate(x_coord.begin(), x_coord.end(), 0) / x_coord.size();
+    marker_coord.y = accumulate(y_coord.begin(), y_coord.end(), 0) / y_coord.size();
     
     /* An alternative approach for calculation center of a contour
     Moments M = moments(cont_min);
-	marker_coord[0] = M.m10 / M.m00;
-	marker_coord[1] = M.m01 / M.m00;
+	marker_coord.x = M.m10 / M.m00;
+	marker_coord.y = M.m01 / M.m00;
     */
     
-    cout << marker_coord[0] << " " << marker_coord[1] << endl;
+    //cout << marker_coord.x << " " << marker_coord.y << endl;
 	
     //Can be optimized: choose roi around contour of interest 
     find_corners(x_coord, y_coord, frame_size);
@@ -129,7 +173,7 @@ void img_proc::find_corners(vector<int>& x, vector<int>& y, Size frame_size)
 	Mat cont_img;
 	cont_img = Mat::zeros(frame_size, CV_32FC1);
 	for (int i = 0; i < x.size(); i++)
-		cont_img.at<float>(x[i], y[i]) = 1.0;
+		cont_img.at<float>(y[i], x[i]) = 1.0;
 	//Apply Harris corner detector
 	Mat corn_img, bin_img;
 	cornerHarris(cont_img, corn_img, 15, 15, 0.1);
@@ -189,32 +233,32 @@ void img_proc::find_corners(vector<int>& x, vector<int>& y, Size frame_size)
 			for (int i = 0; i < (cont_param.size() - 4); i++)
 				cont_param.pop_back();
 		
-		cout << "Sorted vector" << endl;
+		/*cout << "Sorted vector" << endl;
 		for (int i = 0; i < cont_param.size();i++)
 		{
 			int a = cont_param[i][0];
 			int b = cont_param[i][1];
 			int c = cont_param[i][2];
 			cout << a << " " << b << " " << c << endl;
-		}
+		}*/
 		
 		//Vector for holding corner coordinates
-		vector<vector<int>> corner_coord_temp;
+		vector<Point> corner_coord_temp;
 		for (int i = 0; i < 4; i++)
 		{
-			vector<int> temp;
-			temp.push_back(cont_param[i][1]);//x
-			temp.push_back(cont_param[i][2]);//y
-			corner_coord_temp.push_back(temp);
+			Point point;
+			point.x = cont_param[i][1];//x
+			point.y = cont_param[i][2];//y
+			corner_coord_temp.push_back(point);
 		}
 		
-		cout << "Temporal vector" << endl;
+		/*cout << "Temporal vector" << endl;
 		for (int i = 0; i < corner_coord_temp.size();i++)
 		{
-			int x = corner_coord_temp[i][0];
-			int y = corner_coord_temp[i][1];
+			int x = corner_coord_temp[i].x;
+			int y = corner_coord_temp[i].y;
 			cout << x << " " << y << endl;
-		}
+		}*/
 		
 		//Todo: reconsider new coordinate system relative to current marker_coord
 		if (marker_found_prev)
@@ -222,28 +266,28 @@ void img_proc::find_corners(vector<int>& x, vector<int>& y, Size frame_size)
 			//Reorder corner points for pose estimation algorithm
 			for (int i = 0; i < 4; i++)
 			{
-				if (corner_coord_temp[i][0] < frame_size.width / 2 and
-					corner_coord_temp[i][1] < frame_size.height / 2)
+				if (corner_coord_temp[i].x < frame_size.width / 2 and
+					corner_coord_temp[i].y < frame_size.height / 2)
 						corner_coord[0] = corner_coord_temp[i];//top left
 					
-				if (corner_coord_temp[i][0] > frame_size.width / 2 and
-					corner_coord_temp[i][1] < frame_size.height / 2)
+				if (corner_coord_temp[i].x > frame_size.width / 2 and
+					corner_coord_temp[i].y < frame_size.height / 2)
 						corner_coord[1] = corner_coord_temp[i];//top right
 					
-				if (corner_coord_temp[i][0] < frame_size.width / 2 and
-					corner_coord_temp[i][1] > frame_size.height / 2)
+				if (corner_coord_temp[i].x < frame_size.width / 2 and
+					corner_coord_temp[i].y > frame_size.height / 2)
 						corner_coord[2] = corner_coord_temp[i];//bottom left
 					
-				if (corner_coord_temp[i][0] > frame_size.width / 2 and
-					corner_coord_temp[i][1] > frame_size.height / 2)
+				if (corner_coord_temp[i].x > frame_size.width / 2 and
+					corner_coord_temp[i].y > frame_size.height / 2)
 						corner_coord[3] = corner_coord_temp[i];//bottom right
 			}
 		}
 			
 		/*for (int i = 0; i < corner_coord.size();i++)
 		{
-			int x = corner_coord[i][0];
-			int y = corner_coord[i][1];
+			int x = corner_coord[i].x;
+			int y = corner_coord[i].y;
 			cout << x << " " << y << endl;
 		}*/
     }

@@ -21,7 +21,7 @@ class img_proc
 		const double win_scale = 3;
 		double const diff_thresh = 0.2;
 		bool marker_found_prev = false;
-		vector<int> marker_coord;
+		Point marker_coord;
 		int marker_size;
 		Mat img;
 		void find_marker();
@@ -36,7 +36,7 @@ class img_proc
         double Duration;
 	public:
 		bool marker_found = false;
-		vector<vector<int>> corner_coord;	
+		vector<Point> corner_coord;	
 		img_proc();
 		void marker_search(uint8_t* input_img);
 };
