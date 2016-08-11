@@ -3,13 +3,14 @@ Control loop interface
 */
 
 #pragma once
-#include <iostream>
+
 #include <QtCore/QObject>
 #include <QtGui/QImage>
 #include <QtCore/QString>
 #include <QtGui/QPainter>
 #include <QtWidgets/QLabel>
 #include <QtCore/QTimer>
+#include "common.h"
 #include "camera.h"
 #include "img_proc.h"
 #include "pose_estim.h"

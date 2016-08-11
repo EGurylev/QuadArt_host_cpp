@@ -1,17 +1,13 @@
 #pragma once
-#include <chrono>
-#include <iostream>
-#include <QtWidgets/QLabel>
-#include <QtGui/QPainter>
+
+#include "common.h"
 #include <pylon/PylonIncludes.h>
 #include <pylon/TlFactory.h>
 #include <pylon/ThreadPriority.h>
 #include <pylon/_InstantCameraParams.h>
 #include <pylon/usb/BaslerUsbInstantCamera.h>
-#include <opencv2/opencv.hpp>
 
 using namespace Pylon;
-using namespace std;
 using namespace Basler_UsbCameraParams;
 
 typedef CBaslerUsbInstantCamera Camera_t;

@@ -33,7 +33,7 @@ main.o: main.cpp
 #moc is needed for working signals and slots mechanism in Qt 
 moc.o: moc.cpp
 	$(CXX)	$(CPPFLAGS) -c $<
-moc.cpp: include/control_loop.h include/camera.h include/img_proc.h include/pose_estim.h
+moc.cpp: include/control_loop.h include/camera.h include/img_proc.h include/pose_estim.h include/common.h
 	moc $< -o $@
 	
 clean:

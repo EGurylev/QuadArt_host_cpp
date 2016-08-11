@@ -4,11 +4,8 @@ It uses solvePnP function from OpenCV library.
 */
 
 #pragma once
-#include <opencv2/opencv.hpp>
-#include <vector>
 
-using namespace std;
-using namespace cv;
+#include "common.h"
 
 class pose_estimator
 {

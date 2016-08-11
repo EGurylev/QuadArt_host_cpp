@@ -1,14 +1,7 @@
 #pragma once
-#include <opencv2/opencv.hpp>
-#include <vector>
-#include <chrono>
-#include <fstream>
-#include <iostream>
-#include <stdlib.h>
-#include <QtCore/QObject>
 
-using namespace cv;
-using namespace std;
+#include "common.h"
+
 using namespace std::chrono;
 
 class img_proc
