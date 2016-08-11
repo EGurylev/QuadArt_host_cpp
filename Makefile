@@ -18,8 +18,10 @@ CPPFLAGS  += -I/usr/include/qt5/ -std=c++11 -fPIC -pipe
 # OpenCV dependencies
 LDFLAGS   += $(shell pkg-config --libs opencv)
 
-$(NAME): main.o control_loop.o camera.o img_proc.o moc.o
+$(NAME): main.o control_loop.o camera.o img_proc.o pose_estim.o moc.o
 	$(CXX) -o $@ $^ $(LDFLAGS)  $(LDLIBS)
+pose_estim.o: pose_estim.cpp
+	$(CXX) $(CPPFLAGS) -c $<
 control_loop.o: control_loop.cpp
 	$(CXX) $(CPPFLAGS)  -c $<
 img_proc.o: img_proc.cpp
@@ -31,9 +33,9 @@ main.o: main.cpp
 #moc is needed for working signals and slots mechanism in Qt 
 moc.o: moc.cpp
 	$(CXX)	$(CPPFLAGS) -c $<
-moc.cpp: include/control_loop.h include/camera.h include/img_proc.h
+moc.cpp: include/control_loop.h include/camera.h include/img_proc.h include/pose_estim.h
 	moc $< -o $@
 	
 clean:
-	$(RM) $(NAME).o $(NAME) control_loop.o camera.o main.o moc.o img_proc.o moc.cpp
+	$(RM) $(NAME).o $(NAME) control_loop.o camera.o main.o moc.o img_proc.o pose_estim.o moc.cpp
 	

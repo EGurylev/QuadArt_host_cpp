@@ -36,7 +36,7 @@ void img_proc::marker_search(uint8_t* input_img)
 	
 	
 	marker_found_prev = marker_found;
-	cout << marker_found << endl;
+	//cout << marker_found << endl;
 }
 
 void img_proc::find_marker()

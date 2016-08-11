@@ -12,6 +12,7 @@ Control loop interface
 #include <QtCore/QTimer>
 #include "camera.h"
 #include "img_proc.h"
+#include "pose_estim.h"
 
 class Loop : public QObject
 {
@@ -22,7 +23,9 @@ class Loop : public QObject
 		uint8_t* img_p;
 		int timer_period = 10;
 		QLabel img_label;
+		Mat rvec, tvec;
 		img_proc img_proc_obj;
+		pose_estimator pe_obj;
 	public:
 		Loop();
 		void run();

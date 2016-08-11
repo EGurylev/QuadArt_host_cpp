@@ -36,7 +36,7 @@ class img_proc
         double Duration;
 	public:
 		bool marker_found = false;
-		vector<Point> corner_coord;	
+		vector<Point2f> corner_coord;	
 		img_proc();
 		void marker_search(uint8_t* input_img);
 };
