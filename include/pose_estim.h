@@ -33,4 +33,7 @@ class pose_estimator
     public:
     	bool calc_pose(vector<Point2f>& corner_coord,
     		Mat& rvec, Mat& tvec);
+    		
+    	static Mat euler2mat(double roll, double pitch,
+    		double yaw, string order);
 };
