@@ -29,7 +29,9 @@ void Loop::update()
 	pe_obj.calc_pose(img_proc_obj.corner_coord,
 		rvec, tvec);
 		
-	cout << tvec << endl;
+	//Recieve telemetry data from crazyflie and 
+	//send command signals to crazyflie
+	
 }
 
 Loop::~Loop()
