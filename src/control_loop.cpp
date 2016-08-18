@@ -4,11 +4,12 @@ Control loop implementation.
 
 #include "control_loop.h"
 
-Loop::Loop()
+Loop::Loop() : cf_obj("radio://0/80/250K")
 {
 	QObject::connect(&loop_timer, SIGNAL(timeout()),
     	this, SLOT(update()));
     img_label.show();
+    cf_obj.requestLogToc();
 }
 
 void Loop::run()
@@ -31,7 +32,8 @@ void Loop::update()
 		
 	//Recieve telemetry data from crazyflie and 
 	//send command signals to crazyflie
-	
+	cf_obj.sendSetpoint(0.0, 0.0, 0.0, thrust);
+	thrust -= 200;
 }
 
 Loop::~Loop()

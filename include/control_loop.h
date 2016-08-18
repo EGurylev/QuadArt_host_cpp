@@ -14,7 +14,8 @@ Control loop interface
 #include "camera.h"
 #include "img_proc.h"
 #include "pose_estim.h"
-#include "crazy_flie.h"
+#include "Crazyradio.h"
+#include "Crazyflie.h"
 
 class Loop : public QObject
 {
@@ -28,7 +29,8 @@ class Loop : public QObject
 		Mat rvec, tvec;
 		img_proc img_proc_obj;
 		pose_estimator pe_obj;
-		crazy_flie cf_obj;
+		Crazyflie cf_obj;
+		int thrust = 20000;
 	public:
 		Loop();
 		void run();
