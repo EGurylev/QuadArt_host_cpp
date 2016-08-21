@@ -17,6 +17,13 @@ Control loop interface
 #include "Crazyradio.h"
 #include "Crazyflie.h"
 
+struct log_data
+{
+	float roll;
+	float pitch;
+	float yaw;
+} __attribute__((packed));
+
 class Loop : public QObject
 {
 	Q_OBJECT
@@ -34,6 +41,8 @@ class Loop : public QObject
 	public:
 		Loop();
 		void run();
+		void logging();
+		void print_log(uint32_t time_in_ms, log_data* data);
 		~Loop();
 	public slots:
         void update();

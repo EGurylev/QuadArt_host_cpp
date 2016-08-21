@@ -23,7 +23,7 @@ Camera::Camera()
     camera.StartGrabbing(200, GrabStrategy_LatestImageOnly);
     //camera.GrabLoopThreadPriorityOverride = true;
     //camera.GrabLoopThreadPriority = 0;
-    SetRTThreadPriority(GetCurrentThreadHandle(), 99);
+    //SetRTThreadPriority(GetCurrentThreadHandle(), 99);
     //camera.GrabLoopThreadPriority = 25;
     //cout << camera.InternalGrabEngineThreadPriorityOverride() << endl;
 }
