@@ -33,9 +33,10 @@ class Loop : public QObject
 		uint8_t* img_p;
 		int timer_period = 10;
 		QLabel img_label;
-		Mat rvec, tvec;
+		cv::Mat rvec, tvec;
 		img_proc img_proc_obj;
 		pose_estimator pe_obj;
+		pose6D pose_est, pose_meas;
 		Crazyflie cf_obj;
 		int thrust = 20000;
 	public:

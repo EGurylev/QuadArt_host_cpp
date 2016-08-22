@@ -14,22 +14,23 @@ class img_proc
 		const double win_scale = 3;
 		double const diff_thresh = 0.2;
 		bool marker_found_prev = false;
-		Point marker_coord;
+		cv::Point marker_coord;
 		int marker_size;
-		Mat img;
+		cv::Mat img;
 		void find_marker();
 		void track_marker();
-		void find_corners(vector<int>& x, vector<int>& y, Size frame_size);
-		void mean_shift(Mat frame);
+		void find_corners(std::vector<int>& x,
+			std::vector<int>& y, cv::Size frame_size);
+		void mean_shift(cv::Mat frame);
 		void save_img_debug();
 		//debug vars
 		int cnt = 0;
 		int num_debug_img = 50;
-		vector<Mat> img_array;
+		std::vector<cv::Mat> img_array;
         double Duration;
 	public:
 		bool marker_found = false;
-		vector<Point2f> corner_coord;	
+		std::vector<cv::Point2f> corner_coord;	
 		img_proc();
 		void marker_search(uint8_t* input_img);
 };

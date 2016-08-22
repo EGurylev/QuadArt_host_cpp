@@ -25,7 +25,8 @@ void img_proc::marker_search(uint8_t* input_img)
 	auto epoch = now_ms.time_since_epoch();
 	auto value = std::chrono::duration_cast<std::chrono::milliseconds>(epoch);
 	long duration = value.count();
-	putText(img, to_string(duration), Point2f(100, 500),  FONT_HERSHEY_SIMPLEX, 2.0, Scalar(255,255,255), 2);
+	putText(img, std::to_string(duration), cv::Point2f(100, 500),
+		cv::FONT_HERSHEY_SIMPLEX, 2.0, cv::Scalar(255,255,255), 2);
 	if (marker_found)
 	{
 		img_array.push_back(img.clone());
@@ -45,7 +46,7 @@ void img_proc::find_marker()
 	if (marker_found)
 	{
 		for (int i = 0; i < 4; i++)
-			circle(img, corner_coord[i], 3, Scalar(0, 255, 0), -1);
+			circle(img, corner_coord[i], 3, cv::Scalar(0, 255, 0), -1);
 	}
 }
 
@@ -61,8 +62,8 @@ void img_proc::track_marker()
     	x = 0;
     
 	int size = static_cast<int>(win_scale * marker_size);
-	Rect roi(x, y, size, size);
-	Mat marker_frame = img(roi);
+	cv::Rect roi(x, y, size, size);
+	cv::Mat marker_frame = img(roi);
     
 	mean_shift(marker_frame);
 	//Back to global coordinates
@@ -76,37 +77,39 @@ void img_proc::track_marker()
 	
 	if (marker_found)
 	{
-		rectangle(img, roi, Scalar(255), 1, 8, 0);
+		rectangle(img, roi, cv::Scalar(255), 1, 8, 0);
 		for (int i = 0; i < 4; i++)
-			circle(img, corner_coord[i], 3, Scalar(0, 255, 0), -1);
+			circle(img, corner_coord[i], 3, cv::Scalar(0, 255, 0), -1);
 	}
 }
 
-void img_proc::mean_shift(Mat frame)
+void img_proc::mean_shift(cv::Mat frame)
 {
 	// Create a new matrix to hold the gray image
 	high_resolution_clock::time_point t1 = high_resolution_clock::now();
-	Mat gray;
-	cvtColor(frame, gray, COLOR_BGR2GRAY);
-	Size frame_size = gray.size();
-	Mat blurred;
-	blur(gray, blurred, Size(10, 10));
-	Mat thresholded;
-	adaptiveThreshold(blurred, thresholded, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 27,-2);
-	vector<vector<Point>> contours;
-	findContours(thresholded, contours, RETR_EXTERNAL, CHAIN_APPROX_NONE);
+	cv::Mat gray;
+	cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
+	cv::Size frame_size = gray.size();
+	cv::Mat blurred;
+	blur(gray, blurred, cv::Size(10, 10));
+	cv::Mat thresholded;
+	cv::adaptiveThreshold(blurred, thresholded, 255,
+		cv::ADAPTIVE_THRESH_GAUSSIAN_C, cv::THRESH_BINARY, 27,-2);
+	std::vector<std::vector<cv::Point>> contours;
+	cv::findContours(thresholded, contours, cv::RETR_EXTERNAL,
+		cv::CHAIN_APPROX_NONE);
 	
 	if (contours.empty())
 		return;
 	
-	vector<double> area, perimeter;
+	std::vector<double> area, perimeter;
 	for (auto cont = contours.begin(); cont != contours.end(); cont++)
 	{
-		area.push_back(contourArea(*cont));
-		perimeter.push_back(arcLength(*cont, true));
+		area.push_back(cv::contourArea(*cont));
+		perimeter.push_back(cv::arcLength(*cont, true));
 	}
 	// The etalon marker's area and perimeter comes from previous found marker
-	vector<double> diff(contours.size());
+	std::vector<double> diff(contours.size());
 	for (int i = 0; i < contours.size(); i++)
 	{
 		double area_diff = abs(area[i] - area_prev) / area_prev;
@@ -132,7 +135,7 @@ void img_proc::mean_shift(Mat frame)
 	auto cont_min = contours[idx];
     
 	//Individual vectors for holding x and y coordinates #todo: make a function
-	vector<int> x_coord(cont_min.size()), y_coord(cont_min.size());
+	std::vector<int> x_coord(cont_min.size()), y_coord(cont_min.size());
 	for (int i = 0; i < cont_min.size(); i++)
 	{
 		x_coord[i] = cont_min[i].x;
@@ -143,7 +146,7 @@ void img_proc::mean_shift(Mat frame)
 	marker_coord.y = accumulate(y_coord.begin(), y_coord.end(), 0) / y_coord.size();
     
 	/* An alternative approach for calculation center of a contour
-	Moments M = moments(cont_min);
+	cv::Moments M = cv::moments(cont_min);
 	marker_coord.x = M.m10 / M.m00;
 	marker_coord.y = M.m01 / M.m00;
 	*/
@@ -153,28 +156,29 @@ void img_proc::mean_shift(Mat frame)
 	
 	high_resolution_clock::time_point t2 = high_resolution_clock::now();
 	Duration = duration_cast<microseconds>(t2 - t1).count();
-	cout << Duration << endl;
+	std::cout << Duration << std::endl;
 }
 
-void img_proc::find_corners(vector<int>& x, vector<int>& y, Size frame_size)
+void img_proc::find_corners(std::vector<int>& x, std::vector<int>& y, cv::Size frame_size)
 {
 	/*Make Mat object (image) from contour: fill zeros by default
 	and ones at contours' points*/
-	Mat cont_img;
-	cont_img = Mat::zeros(frame_size, CV_32FC1);
+	cv::Mat cont_img;
+	cont_img = cv::Mat::zeros(frame_size, CV_32FC1);
 	for (int i = 0; i < x.size(); i++)
 		cont_img.at<float>(y[i], x[i]) = 1.0;
 	//Apply Harris corner detector
-	Mat corn_img, bin_img;
-	cornerHarris(cont_img, corn_img, 15, 15, 0.1);
+	cv::Mat corn_img, bin_img;
+	cv::cornerHarris(cont_img, corn_img, 15, 15, 0.1);
 	//and make binary image by thresholding
 	double min, max;
-	minMaxLoc(corn_img, &min, &max);
-	threshold(corn_img, bin_img, 0.4 * max, 1, 0);
+	cv::minMaxLoc(corn_img, &min, &max);
+	cv::threshold(corn_img, bin_img, 0.4 * max, 1, 0);
 	//find contours and sort them by area, choose 4 biggest
 	bin_img.convertTo(bin_img, CV_8UC1);
-	vector<vector<Point>> contours_corn;
-	findContours(bin_img, contours_corn, RETR_EXTERNAL, CHAIN_APPROX_NONE);
+	std::vector<std::vector<cv::Point>> contours_corn;
+	cv::findContours(bin_img, contours_corn, cv::RETR_EXTERNAL,
+		cv::CHAIN_APPROX_NONE);
 	
 	if (contours_corn.size() < 4)
 	{
@@ -187,12 +191,12 @@ void img_proc::find_corners(vector<int>& x, vector<int>& y, Size frame_size)
     	/* Nested vector of cont_param has 3 ints: contour area, x and y
     	coordinate of contour's center. Sort them by area.
     	*/
-    	vector<vector<int>> cont_param;
+    	std::vector<std::vector<int>> cont_param;
     	
     	//Iterate through each found contour
     	for (int cont_cnt = 0; cont_cnt < contours_corn.size(); cont_cnt++)
     	{
-    		vector<int> x_coord, y_coord;
+    		std::vector<int> x_coord, y_coord;
     		for (int i = 0; i < contours_corn[cont_cnt].size(); i++)
     		{
     			x_coord.push_back(contours_corn[cont_cnt][i].x);
@@ -202,7 +206,7 @@ void img_proc::find_corners(vector<int>& x, vector<int>& y, Size frame_size)
     		int x = accumulate(x_coord.begin(), x_coord.end(), 0) / x_coord.size();
     		int y = accumulate(y_coord.begin(), y_coord.end(), 0) / y_coord.size();
     			
-    		vector<int> temp_vec;
+    		std::vector<int> temp_vec;
     		int area = static_cast<int>(contourArea(contours_corn[cont_cnt]));
     		temp_vec.push_back(area);
     		temp_vec.push_back(x);
@@ -213,7 +217,7 @@ void img_proc::find_corners(vector<int>& x, vector<int>& y, Size frame_size)
     		
     	//Sort final cont_param vector by area (0-th element)
     	sort(cont_param.begin(), cont_param.end(),
-           	[](const vector<int>& a, const vector<int>& b)
+           	[](const std::vector<int>& a, const std::vector<int>& b)
             {
   				return a[0] > b[0];
 			});
@@ -229,14 +233,14 @@ void img_proc::find_corners(vector<int>& x, vector<int>& y, Size frame_size)
 			int a = cont_param[i][0];
 			int b = cont_param[i][1];
 			int c = cont_param[i][2];
-			cout << a << " " << b << " " << c << endl;
+			std::cout << a << " " << b << " " << c << std::endl;
 		}*/
 		
 		//Vector for holding corner coordinates
-		vector<Point> corner_coord_temp;
+		std::vector<cv::Point> corner_coord_temp;
 		for (int i = 0; i < 4; i++)
 		{
-			Point point;
+			cv::Point point;
 			point.x = cont_param[i][1];//x
 			point.y = cont_param[i][2];//y
 			corner_coord_temp.push_back(point);
@@ -247,7 +251,7 @@ void img_proc::find_corners(vector<int>& x, vector<int>& y, Size frame_size)
 		{
 			int x = corner_coord_temp[i].x;
 			int y = corner_coord_temp[i].y;
-			cout << x << " " << y << endl;
+			std::cout << x << " " << y << std::endl;
 		}*/
 		
 		//Todo: reconsider new coordinate system relative to current marker_coord
@@ -278,7 +282,7 @@ void img_proc::find_corners(vector<int>& x, vector<int>& y, Size frame_size)
 		{
 			int x = corner_coord[i].x;
 			int y = corner_coord[i].y;
-			cout << x << " " << y << endl;
+			std::cout << x << " " << y << std::endl;
 		}*/
     }
     
@@ -288,7 +292,7 @@ void img_proc::save_img_debug()
 {
 	for (int i = 0; i < img_array.size(); i ++)
 	{
-		string filename = "image_" + to_string(i) + ".jpg";
+		std::string filename = "image_" + std::to_string(i) + ".jpg";
 		imwrite(filename, img_array[i]);
 	}
 }

@@ -9,7 +9,7 @@ Camera::Camera()
     // Attach object with the first found camera device that matches the specified device class.
     camera.Attach(CTlFactory::GetInstance().CreateFirstDevice(info));
     // Print the model name of the camera.
-    cout << "Using device " << camera.GetDeviceInfo().GetModelName() << endl;
+    std::cout << "Using device " << camera.GetDeviceInfo().GetModelName() << std::endl;
 
     // Register an image event handler that accesses the chunk data.
     camera.RegisterImageEventHandler(new CSampleImageEventHandler, RegistrationMode_Append, Cleanup_Delete);
@@ -44,7 +44,8 @@ uint8_t* Camera::grab_image()
             {
 				if (IsReadable(ptrGrabResult->ChunkTimestamp))
 					TimeStamp = ptrGrabResult->ChunkTimestamp.GetValue();
-				cout << "Difference in grabbing time " << (TimeStamp - TimeStampPrev) / 1000 << endl;
+				std::cout << "Difference in grabbing time " << 
+					(TimeStamp - TimeStampPrev) / 1000 << std::endl;
             }
             
             TimeStampPrev = TimeStamp;

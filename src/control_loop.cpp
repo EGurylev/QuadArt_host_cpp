@@ -42,9 +42,9 @@ void Loop::logging()
 
 void Loop::print_log(uint32_t time_in_ms, log_data* data)
 {
-	cout << data->roll << endl;
-	cout << data->pitch << endl;
-	cout << data->yaw << endl;
+	std::cout << data->roll << std::endl;
+	std::cout << data->pitch << std::endl;
+	std::cout << data->yaw << std::endl;
 }
 
 void Loop::update()
