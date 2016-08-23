@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <fstream>
 #include <vector>
-#include <opencv2/opencv.hpp>
+#include <cmath>
 
 const double pi = std::acos(-1);
 

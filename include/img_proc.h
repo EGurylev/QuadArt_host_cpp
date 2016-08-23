@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.h"
+#include <opencv2/opencv.hpp>
 
 using namespace std::chrono;
 

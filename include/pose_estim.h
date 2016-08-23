@@ -6,15 +6,17 @@ It uses solvePnP function from OpenCV library.
 #pragma once
 
 #include "common.h"
+#include <opencv2/opencv.hpp>
 
 struct pose6D
 {
-	float x = 0;
-	float y = 0;
-	float z = 0;
-	float roll = 0;
-	float pitch = 0;
-	float yaw = 0;
+	double x = 0;
+	double y = 0;
+	double z = 0;
+	double roll = 0;
+	double pitch = 0;
+	double yaw = 0;
+	bool isvalid = true;
 };
 
 class pose_estimator

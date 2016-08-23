@@ -5,14 +5,30 @@ Control loop implementation.
 #include "control_loop.h"
 #include <thread>
 
-Loop::Loop() : cf_obj("radio://0/80/250K")
+Loop::Loop() :
+	cf_obj("radio://0/80/250K"),
+	
+	z_controller(80, 30, 90, 0.35,
+		timer_period / 1000.0, 7000,
+		-7000, true),
+		
+	x_controller(0.1, 0.01, 0.12, 0.15,
+		timer_period / 1000.0, 20,
+		-20, true),
+		
+	y_controller(0.1, 0.01, 0.12, 0.15,
+		timer_period / 1000.0, 20,
+		-20, true)
 {
 	QObject::connect(&loop_timer, SIGNAL(timeout()),
     	this, SLOT(update()));
-    
+    //Log variables
     logger.first.push_back("roll_cf");
     logger.first.push_back("pitch_cf");
     logger.first.push_back("yaw_cf");
+    
+    //Initialize pid controllers
+	
     
     img_label.show();
     std::thread log_thread(&Loop::logging, this);
@@ -37,21 +53,47 @@ void Loop::update()
 	//marker in camera coordinate system
 	pe_obj.calc_pose(img_proc_obj.corner_coord,
 		rvec, tvec);
-		
+	
+	//Feedback control
+	double thrust_set, roll_set, pitch_set, yaw_set;
+	feedback_control(thrust_set, roll_set,
+			pitch_set, yaw_set);
 	//Send command signals to crazyflie
-	if(thrust <= 0)
-		thrust = 0;
+	if(thrust_eq <= 0)
+		thrust_eq = 0;
 	else
-		thrust -= 200;
-	cf_obj.sendSetpoint(0.0, 0.0, 0.0, thrust);
+		thrust_eq -= 200;
+	cf_obj.sendSetpoint(0.0, 0.0, 0.0, thrust_eq);
 	
 	//Log data
-	std::vector<float> log_slice;
+	std::vector<double> log_slice;
 	log_slice.push_back(pose_meas.roll);
 	log_slice.push_back(pose_meas.pitch);
 	log_slice.push_back(pose_meas.yaw);
 	logger.second.push_back(log_slice);
 	
+}
+
+void Loop::feedback_control
+			(double &thrust_set, double &roll_set,
+			 double &pitch_set, double &yaw_set)
+{
+	if(pose_est.isvalid)
+	{
+		thrust_set = z_controller.eval(-pose_est.z, 0);
+		thrust_set += thrust_eq;
+		pitch_set = x_controller.eval(pose_est.x, 0);
+		roll_set = -y_controller.eval(pose_est.y, 0);
+		yaw_set = 0;
+	}
+	else
+	{
+		thrust_set = 0;
+		pitch_set = 0;
+		roll_set = 0;
+		yaw_set = 0;
+	}
+	thrust_set = static_cast<int>(thrust_set);
 }
 
 void Loop::logging()

@@ -16,6 +16,7 @@ Control loop interface
 #include "pose_estim.h"
 #include "Crazyradio.h"
 #include "Crazyflie.h"
+#include "pid.h"
 
 struct log_block
 {
@@ -38,17 +39,27 @@ class Loop : public QObject
 		pose_estimator pe_obj;
 		pose6D pose_est, pose_meas;
 		std::pair<std::vector<std::string>,
-			std::vector<std::vector<float>>> logger;
+			std::vector<std::vector<double>>> logger;
 		Crazyflie cf_obj;
-		int thrust = 20000;
+		int thrust_eq = 20000;
+		
+		pid z_controller;
+		pid x_controller;
+		pid y_controller;
 	public:
 		Loop();
+		~Loop();
+		
+		void feedback_control(double &thrust_set,
+			double &roll_set, double &pitch_set,
+			double &yaw_set);
+		
 		void run();
 		void logging();
 		void log_callback(uint32_t time_in_ms,
 			log_block* data);
 		void log2file();
-		~Loop();
+		
 	public slots:
         void update();
 };
