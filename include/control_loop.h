@@ -17,7 +17,7 @@ Control loop interface
 #include "Crazyradio.h"
 #include "Crazyflie.h"
 
-struct log_data
+struct log_block
 {
 	float roll;
 	float pitch;
@@ -37,13 +37,17 @@ class Loop : public QObject
 		img_proc img_proc_obj;
 		pose_estimator pe_obj;
 		pose6D pose_est, pose_meas;
+		std::pair<std::vector<std::string>,
+			std::vector<std::vector<float>>> logger;
 		Crazyflie cf_obj;
 		int thrust = 20000;
 	public:
 		Loop();
 		void run();
 		void logging();
-		void print_log(uint32_t time_in_ms, log_data* data);
+		void log_callback(uint32_t time_in_ms,
+			log_block* data);
+		void log2file();
 		~Loop();
 	public slots:
         void update();
