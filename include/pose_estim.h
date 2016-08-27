@@ -6,7 +6,7 @@ It uses solvePnP function from OpenCV library.
 #pragma once
 
 #include "common.h"
-#include <opencv2/opencv.hpp>
+#include "img_proc.h"
 
 struct pose6D
 {
@@ -43,8 +43,7 @@ class pose_estimator
         cv::Mat dist_coeffs = cv::Mat(5, 1, CV_64FC1, _dc);
       
     public:
-    	bool calc_pose(std::vector<cv::Point2f>& corner_coord,
-    		cv::Mat& rvec, cv::Mat& tvec);
+    	bool calc_pose(marker *Marker, pose6D &pose_est);
     		
     	static cv::Mat euler2mat(double roll, double pitch,
     		double yaw, std::string order);

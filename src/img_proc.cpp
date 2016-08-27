@@ -2,20 +2,20 @@
 
 img_proc::img_proc()
 {
-	marker_size = perimeter_prev / 4;
-	area_prev = marker_size * marker_size;
-	marker_coord.x = img_width / 2;
-	marker_coord.y = img_height / 2;
-	corner_coord.resize(4);
+	Marker.size = Marker.perimeter_prev / 4;
+	Marker.area_prev = Marker.size * Marker.size;
+	Marker.coord.x = img_width / 2;
+	Marker.coord.y = img_height / 2;
+	Marker.corner_coord.resize(4);
 }
 
-void img_proc::marker_search(uint8_t* input_img)
+marker* img_proc::marker_search(uint8_t* input_img)
 {
 	//Convert to OpenCV format
 	
 	img = cv::Mat(img_height, img_width, CV_8UC3, input_img);
 	
-	if (marker_found)
+	if (Marker.found)
 		track_marker();
 	else
 		find_marker();
@@ -27,59 +27,63 @@ void img_proc::marker_search(uint8_t* input_img)
 	long duration = value.count();
 	putText(img, std::to_string(duration), cv::Point2f(100, 500),
 		cv::FONT_HERSHEY_SIMPLEX, 2.0, cv::Scalar(255,255,255), 2);
-	if (marker_found)
+	/*if (Marker.found)
 	{
 		img_array.push_back(img.clone());
 		cnt += 1;
 	}
 	if (cnt == num_debug_img)//very bad
-		save_img_debug();
+		save_img_debug();*/
 	
-	
-	marker_found_prev = marker_found;
-	//cout << marker_found << endl;
+	if(not Marker.found_prev and Marker.found)
+		std::cout << "Marker is found!" << std::endl;
+	else if(Marker.found_prev and not Marker.found)
+		std::cout << "Marker is lost!" << std::endl;
+	Marker.found_prev = Marker.found;
+	//cout << Marker.found << endl;
+	return &Marker;
 }
 
 void img_proc::find_marker()
 {
 	mean_shift(img);
-	if (marker_found)
+	if (Marker.found)
 	{
 		for (int i = 0; i < 4; i++)
-			circle(img, corner_coord[i], 3, cv::Scalar(0, 255, 0), -1);
+			circle(img, Marker.corner_coord[i], 3, cv::Scalar(0, 255, 0), -1);
 	}
 }
 
 void img_proc::track_marker()
 {
-	marker_size = perimeter_prev / 4;
+	Marker.size = Marker.perimeter_prev / 4;
 	//Set ROI near found marker from previous iteration
-	int x = marker_coord.x - static_cast<int>(win_scale * marker_size / 2);
-	int y = marker_coord.y - static_cast<int>(win_scale * marker_size / 2);   
+	int x = Marker.coord.x - static_cast<int>(win_scale * Marker.size / 2);
+	int y = Marker.coord.y - static_cast<int>(win_scale * Marker.size / 2);   
 	if (y < 0)
 		y = 0;
 	if (x < 0)
     	x = 0;
     
-	int size = static_cast<int>(win_scale * marker_size);
+	int size = static_cast<int>(win_scale * Marker.size);
 	cv::Rect roi(x, y, size, size);
 	cv::Mat marker_frame = img(roi);
     
 	mean_shift(marker_frame);
 	//Back to global coordinates
-	marker_coord.x += x;
-	marker_coord.y += y;
+	Marker.coord.x += x;
+	Marker.coord.y += y;
 	for (int i = 0; i < 4; i++)
 	{
-		corner_coord[i].x += x;
-		corner_coord[i].y += y;
+		Marker.corner_coord[i].x += x;
+		Marker.corner_coord[i].y += y;
 	}
 	
-	if (marker_found)
+	if (Marker.found)
 	{
 		rectangle(img, roi, cv::Scalar(255), 1, 8, 0);
 		for (int i = 0; i < 4; i++)
-			circle(img, corner_coord[i], 3, cv::Scalar(0, 255, 0), -1);
+			circle(img, Marker.corner_coord[i], 3, cv::Scalar(0, 255, 0), -1);
 	}
 }
 
@@ -112,8 +116,8 @@ void img_proc::mean_shift(cv::Mat frame)
 	std::vector<double> diff(contours.size());
 	for (int i = 0; i < contours.size(); i++)
 	{
-		double area_diff = abs(area[i] - area_prev) / area_prev;
-		double perimeter_diff = abs(perimeter[i] - perimeter_prev) / perimeter_prev;
+		double area_diff = abs(area[i] - Marker.area_prev) / Marker.area_prev;
+		double perimeter_diff = abs(perimeter[i] - Marker.perimeter_prev) / Marker.perimeter_prev;
 		//Such simple mixture gives acceptable result
 		diff[i] = area_diff + perimeter_diff;
 	}
@@ -121,15 +125,15 @@ void img_proc::mean_shift(cv::Mat frame)
 	auto min_idx = min_element(diff.begin(), diff.end());
 	if (*min_idx > diff_thresh)
 	{
-		marker_found = false;
+		Marker.found = false;
 		return;
 	}
 	else
-		marker_found = true;
+		Marker.found = true;
     
 	auto idx = min_idx - diff.begin();
-	area_prev = area[idx];
-	perimeter_prev = perimeter[idx];
+	Marker.area_prev = area[idx];
+	Marker.perimeter_prev = perimeter[idx];
     
 	//Contour of interest
 	auto cont_min = contours[idx];
@@ -142,13 +146,13 @@ void img_proc::mean_shift(cv::Mat frame)
 		y_coord[i] = cont_min[i].y;
 	}
 	//Coordinates of a marker's center
-	marker_coord.x = accumulate(x_coord.begin(), x_coord.end(), 0) / x_coord.size();
-	marker_coord.y = accumulate(y_coord.begin(), y_coord.end(), 0) / y_coord.size();
+	Marker.coord.x = accumulate(x_coord.begin(), x_coord.end(), 0) / x_coord.size();
+	Marker.coord.y = accumulate(y_coord.begin(), y_coord.end(), 0) / y_coord.size();
     
 	/* An alternative approach for calculation center of a contour
 	cv::Moments M = cv::moments(cont_min);
-	marker_coord.x = M.m10 / M.m00;
-	marker_coord.y = M.m01 / M.m00;
+	Marker.coord.x = M.m10 / M.m00;
+	Marker.coord.y = M.m01 / M.m00;
 	*/
 	
 	//Can be optimized: choose roi around contour of interest 
@@ -182,12 +186,12 @@ void img_proc::find_corners(std::vector<int>& x, std::vector<int>& y, cv::Size f
 	
 	if (contours_corn.size() < 4)
 	{
-		marker_found = false;
+		Marker.found = false;
 		return;
 	}
 	else
 	{
-		marker_found = true;
+		Marker.found = true;
     	/* Nested vector of cont_param has 3 ints: contour area, x and y
     	coordinate of contour's center. Sort them by area.
     	*/
@@ -255,26 +259,26 @@ void img_proc::find_corners(std::vector<int>& x, std::vector<int>& y, cv::Size f
 		}*/
 		
 		//Todo: reconsider new coordinate system relative to current marker_coord
-		if (marker_found_prev)
+		if (Marker.found_prev)
 		{
 			//Reorder corner points for pose estimation algorithm
 			for (int i = 0; i < 4; i++)
 			{
 				if (corner_coord_temp[i].x < frame_size.width / 2 and
 					corner_coord_temp[i].y < frame_size.height / 2)
-						corner_coord[0] = corner_coord_temp[i];//top left
+						Marker.corner_coord[0] = corner_coord_temp[i];//top left
 					
 				if (corner_coord_temp[i].x > frame_size.width / 2 and
 					corner_coord_temp[i].y < frame_size.height / 2)
-						corner_coord[1] = corner_coord_temp[i];//top right
+						Marker.corner_coord[1] = corner_coord_temp[i];//top right
 					
 				if (corner_coord_temp[i].x < frame_size.width / 2 and
 					corner_coord_temp[i].y > frame_size.height / 2)
-						corner_coord[2] = corner_coord_temp[i];//bottom left
+						Marker.corner_coord[2] = corner_coord_temp[i];//bottom left
 					
 				if (corner_coord_temp[i].x > frame_size.width / 2 and
 					corner_coord_temp[i].y > frame_size.height / 2)
-						corner_coord[3] = corner_coord_temp[i];//bottom right
+						Marker.corner_coord[3] = corner_coord_temp[i];//bottom right
 			}
 		}
 			

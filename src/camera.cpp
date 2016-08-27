@@ -20,7 +20,7 @@ Camera::Camera()
     camera.ChunkModeActive.SetValue(true);
     camera.ChunkSelector.SetValue(Basler_UsbCameraParams::ChunkSelector_Timestamp);
 	camera.ChunkEnable.SetValue(true);
-    camera.StartGrabbing(200, GrabStrategy_LatestImageOnly);
+    camera.StartGrabbing(500, GrabStrategy_LatestImageOnly);
     //camera.GrabLoopThreadPriorityOverride = true;
     //camera.GrabLoopThreadPriority = 0;
     //SetRTThreadPriority(GetCurrentThreadHandle(), 99);
@@ -44,8 +44,8 @@ uint8_t* Camera::grab_image()
             {
 				if (IsReadable(ptrGrabResult->ChunkTimestamp))
 					TimeStamp = ptrGrabResult->ChunkTimestamp.GetValue();
-				std::cout << "Difference in grabbing time " << 
-					(TimeStamp - TimeStampPrev) / 1000 << std::endl;
+				//std::cout << "Difference in grabbing time " << 
+					//(TimeStamp - TimeStampPrev) / 1000 << std::endl;
             }
             
             TimeStampPrev = TimeStamp;

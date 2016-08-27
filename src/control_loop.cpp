@@ -23,9 +23,13 @@ Loop::Loop() :
 	QObject::connect(&loop_timer, SIGNAL(timeout()),
     	this, SLOT(update()));
     //Log variables
+    logger.first.push_back("marker_found");
     logger.first.push_back("roll_cf");
     logger.first.push_back("pitch_cf");
     logger.first.push_back("yaw_cf");
+    logger.first.push_back("x");
+    logger.first.push_back("y");
+    logger.first.push_back("z");
     
     //Initialize pid controllers
 	
@@ -47,12 +51,11 @@ void Loop::update()
 	img_p = cam_obj.grab_image();
 	
 	//Get marker coordinates from image in 2D
-	img_proc_obj.marker_search(img_p);
+	marker* Marker = img_proc_obj.marker_search(img_p);
 	
 	//Get rotation and translation vector of 
 	//marker in camera coordinate system
-	pe_obj.calc_pose(img_proc_obj.corner_coord,
-		rvec, tvec);
+	pe_obj.calc_pose(Marker, pose_est);
 	
 	//Feedback control
 	double thrust_set, roll_set, pitch_set, yaw_set;
@@ -67,9 +70,13 @@ void Loop::update()
 	
 	//Log data
 	std::vector<double> log_slice;
+	log_slice.push_back(Marker->found);
 	log_slice.push_back(pose_meas.roll);
 	log_slice.push_back(pose_meas.pitch);
 	log_slice.push_back(pose_meas.yaw);
+	log_slice.push_back(pose_est.x);
+	log_slice.push_back(pose_est.y);
+	log_slice.push_back(pose_est.z);
 	logger.second.push_back(log_slice);
 	
 }
@@ -114,7 +121,7 @@ void Loop::logging()
 	while(true)
 	{
 		cf_obj.sendPing();
-		std::this_thread::sleep_for(std::chrono::milliseconds(5));
+		std::this_thread::sleep_for(std::chrono::milliseconds(2));
 	}	 
 }
 

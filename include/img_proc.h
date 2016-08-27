@@ -5,18 +5,28 @@
 
 using namespace std::chrono;
 
+struct marker
+{
+	friend class img_proc;
+	private:
+		double area_prev;
+		double perimeter_prev = 160;
+		int size;
+		bool found_prev = false;
+	public:
+		bool found = false;
+		cv::Point coord;
+		std::vector<cv::Point2f> corner_coord;
+};
+
 class img_proc
 {
 	private:
 		const int img_width = 1280;
 		const int img_height = 1024;
-		double area_prev;
-		double perimeter_prev = 160;
 		const double win_scale = 3;
 		double const diff_thresh = 0.2;
-		bool marker_found_prev = false;
-		cv::Point marker_coord;
-		int marker_size;
+		marker Marker;
 		cv::Mat img;
 		void find_marker();
 		void track_marker();
@@ -30,8 +40,6 @@ class img_proc
 		std::vector<cv::Mat> img_array;
         double Duration;
 	public:
-		bool marker_found = false;
-		std::vector<cv::Point2f> corner_coord;	
 		img_proc();
-		void marker_search(uint8_t* input_img);
+		marker* marker_search(uint8_t* input_img);
 };
