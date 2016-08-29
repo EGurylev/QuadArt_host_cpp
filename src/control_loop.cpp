@@ -20,19 +20,26 @@ Loop::Loop() :
 		timer_period / 1000.0, 20,
 		-20, true)
 {
+	//Init start time
+	start_time = high_resolution_clock::now();
+	
 	QObject::connect(&loop_timer, SIGNAL(timeout()),
     	this, SLOT(update()));
     //Log variables
+    logger.first.push_back("time");
     logger.first.push_back("marker_found");
+    logger.first.push_back("thrust_set");
+    logger.first.push_back("pitch_set");
+    logger.first.push_back("roll_set");
     logger.first.push_back("roll_cf");
     logger.first.push_back("pitch_cf");
     logger.first.push_back("yaw_cf");
     logger.first.push_back("x");
     logger.first.push_back("y");
     logger.first.push_back("z");
-    
-    //Initialize pid controllers
-	
+    logger.first.push_back("area");
+    logger.first.push_back("perimeter");
+    logger.first.push_back("min_diff");
     
     img_label.show();
     std::thread log_thread(&Loop::logging, this);
@@ -66,17 +73,30 @@ void Loop::update()
 		thrust_eq = 0;
 	else
 		thrust_eq -= 200;
-	cf_obj.sendSetpoint(0.0, 0.0, 0.0, thrust_eq);
+	cf_obj.sendSetpoint(roll_set, pitch_set, yaw_set, thrust_eq);
+	
+	//Measure current time in ms
+	high_resolution_clock::time_point time_now = 
+		high_resolution_clock::now();
+	double log_time = static_cast<double>(duration_cast<microseconds>
+		(time_now - start_time).count());
 	
 	//Log data
 	std::vector<double> log_slice;
+	log_slice.push_back(log_time);
 	log_slice.push_back(Marker->found);
+	log_slice.push_back(thrust_set);
+	log_slice.push_back(roll_set);
+	log_slice.push_back(pitch_set);
 	log_slice.push_back(pose_meas.roll);
 	log_slice.push_back(pose_meas.pitch);
 	log_slice.push_back(pose_meas.yaw);
 	log_slice.push_back(pose_est.x);
 	log_slice.push_back(pose_est.y);
 	log_slice.push_back(pose_est.z);
+	log_slice.push_back(img_proc_obj.log_debug.area);
+	log_slice.push_back(img_proc_obj.log_debug.perimeter);
+	log_slice.push_back(img_proc_obj.log_debug.min_diff);
 	logger.second.push_back(log_slice);
 	
 }

@@ -19,6 +19,13 @@ struct marker
 		std::vector<cv::Point2f> corner_coord;
 };
 
+struct img_debug
+{
+	double area;
+	double perimeter;
+	double min_diff;
+};
+
 class img_proc
 {
 	private:
@@ -42,4 +49,5 @@ class img_proc
 	public:
 		img_proc();
 		marker* marker_search(uint8_t* input_img);
+		img_debug log_debug;
 };

@@ -20,7 +20,7 @@ Camera::Camera()
     camera.ChunkModeActive.SetValue(true);
     camera.ChunkSelector.SetValue(Basler_UsbCameraParams::ChunkSelector_Timestamp);
 	camera.ChunkEnable.SetValue(true);
-    camera.StartGrabbing(500, GrabStrategy_LatestImageOnly);
+    camera.StartGrabbing(GrabStrategy_LatestImageOnly);
     //camera.GrabLoopThreadPriorityOverride = true;
     //camera.GrabLoopThreadPriority = 0;
     //SetRTThreadPriority(GetCurrentThreadHandle(), 99);

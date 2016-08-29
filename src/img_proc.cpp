@@ -15,19 +15,25 @@ marker* img_proc::marker_search(uint8_t* input_img)
 	
 	img = cv::Mat(img_height, img_width, CV_8UC3, input_img);
 	
+	high_resolution_clock::time_point t1 = high_resolution_clock::now();
+	
 	if (Marker.found)
 		track_marker();
 	else
 		find_marker();
+		
+	high_resolution_clock::time_point t2 = high_resolution_clock::now();
+	Duration = duration_cast<microseconds>(t2 - t1).count();
+	std::cout << Duration << std::endl;
 	
-	auto now = std::chrono::system_clock::now();
+	/*auto now = std::chrono::system_clock::now();
 	auto now_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(now);
 	auto epoch = now_ms.time_since_epoch();
 	auto value = std::chrono::duration_cast<std::chrono::milliseconds>(epoch);
 	long duration = value.count();
 	putText(img, std::to_string(duration), cv::Point2f(100, 500),
 		cv::FONT_HERSHEY_SIMPLEX, 2.0, cv::Scalar(255,255,255), 2);
-	/*if (Marker.found)
+	if (Marker.found)
 	{
 		img_array.push_back(img.clone());
 		cnt += 1;
@@ -94,7 +100,6 @@ void img_proc::track_marker()
 void img_proc::mean_shift(cv::Mat frame)
 {
 	// Create a new matrix to hold the gray image
-	high_resolution_clock::time_point t1 = high_resolution_clock::now();
 	cv::Mat gray;
 	cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
 	cv::Size frame_size = gray.size();
@@ -127,6 +132,14 @@ void img_proc::mean_shift(cv::Mat frame)
 	}
 	
 	auto min_idx = min_element(diff.begin(), diff.end());
+	auto idx = min_idx - diff.begin();
+	/*
+	Log debug vars
+	*/
+	log_debug.area = area[idx];
+	log_debug.perimeter = perimeter[idx];
+	log_debug.min_diff = *min_idx;
+	
 	if (*min_idx > diff_thresh)
 	{
 		Marker.found = false;
@@ -135,7 +148,6 @@ void img_proc::mean_shift(cv::Mat frame)
 	else
 		Marker.found = true;
     
-	auto idx = min_idx - diff.begin();
 	Marker.area_prev = area[idx];
 	Marker.perimeter_prev = perimeter[idx];
     
@@ -161,10 +173,6 @@ void img_proc::mean_shift(cv::Mat frame)
 	
 	//Can be optimized: choose roi around contour of interest 
 	find_corners(x_coord, y_coord, frame_size);
-	
-	high_resolution_clock::time_point t2 = high_resolution_clock::now();
-	Duration = duration_cast<microseconds>(t2 - t1).count();
-	std::cout << Duration << std::endl;
 }
 
 void img_proc::find_corners(std::vector<int>& x, std::vector<int>& y, cv::Size frame_size)

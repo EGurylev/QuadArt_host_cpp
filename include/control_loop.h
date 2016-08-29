@@ -42,6 +42,7 @@ class Loop : public QObject
 			std::vector<std::vector<double>>> logger;
 		Crazyflie cf_obj;
 		int thrust_eq = 20000;
+		high_resolution_clock::time_point start_time;
 		
 		pid z_controller;
 		pid x_controller;
