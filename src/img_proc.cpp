@@ -40,7 +40,7 @@ marker* img_proc::marker_search(uint8_t* input_img)
 	else if(Marker.found_prev and not Marker.found)
 		std::cout << "Marker is lost!" << std::endl;
 	Marker.found_prev = Marker.found;
-	//cout << Marker.found << endl;
+	
 	return &Marker;
 }
 
@@ -66,6 +66,10 @@ void img_proc::track_marker()
     	x = 0;
     
 	int size = static_cast<int>(win_scale * Marker.size);
+	if(x + size > img_width)
+		size = img_width - x;
+	if(y + size > img_height)
+		size = img_height - y;
 	cv::Rect roi(x, y, size, size);
 	cv::Mat marker_frame = img(roi);
     

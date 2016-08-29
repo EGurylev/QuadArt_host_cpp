@@ -2,13 +2,24 @@
 
 bool pose_estimator::calc_pose(marker *Marker, pose6D &pose_est)
 {
-	cv::Mat rvec, tvec;
-	solvePnP(object_points, Marker->corner_coord,
-		camera_matrix, dist_coeffs, rvec, tvec, false, CV_ITERATIVE);
-        
-	pose_est.x = tvec.at<double>(0);
-	pose_est.y = tvec.at<double>(2);
-	pose_est.z = tvec.at<double>(1);
+	if(Marker->found)
+	{
+		pose_est.isvalid = true;
+		cv::Mat rvec, tvec;
+		solvePnP(object_points, Marker->corner_coord,
+			camera_matrix, dist_coeffs, rvec, tvec, false, CV_ITERATIVE);
+		    
+		pose_est.x = tvec.at<double>(0);
+		pose_est.y = tvec.at<double>(2);
+		pose_est.z = tvec.at<double>(1);
+	}
+	else
+	{
+		pose_est.isvalid = false;
+		pose_est.x = 0;
+		pose_est.y = 0;
+		pose_est.z = 0;
+	}
 	
 	return true;
 }
