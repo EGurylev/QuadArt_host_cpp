@@ -19,10 +19,16 @@ struct pose6D
 	bool isvalid = true;
 };
 
+struct pose_debug
+{
+	double proj_error;
+};
+
 class pose_estimator
 {
 	private:
 		double l = 3.0;//length of a marker in cm
+		double proj_err_thresh = 6;
 		std::vector<cv::Point3f> object_points = 
 			{ cv::Point3f(-l/2, -l/2, 0),
 			  cv::Point3f( l/2, -l/2, 0),
@@ -43,7 +49,8 @@ class pose_estimator
         cv::Mat dist_coeffs = cv::Mat(5, 1, CV_64FC1, _dc);
       
     public:
-    	bool calc_pose(marker *Marker, pose6D &pose_est);
+    	pose_debug log_debug;
+    	void calc_pose(marker *Marker, pose6D &pose_est);
     		
     	static cv::Mat euler2mat(double roll, double pitch,
     		double yaw, std::string order);

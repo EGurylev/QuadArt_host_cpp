@@ -25,6 +25,15 @@ struct log_block
 	float yaw;
 } __attribute__((packed));
 
+struct control
+{
+	int thrust = 0;
+	double roll = 0;
+	double pitch = 0;
+	double yaw = 0;
+	int thrust_max = 65000;
+};
+
 class Loop : public QObject
 {
 	Q_OBJECT
@@ -44,6 +53,9 @@ class Loop : public QObject
 		int thrust_eq = 20000;
 		high_resolution_clock::time_point start_time;
 		
+		int not_valid_count = 0;
+		int not_valid_period = 10;
+		control control_set;
 		pid z_controller;
 		pid x_controller;
 		pid y_controller;
@@ -51,9 +63,7 @@ class Loop : public QObject
 		Loop();
 		~Loop();
 		
-		void feedback_control(double &thrust_set,
-			double &roll_set, double &pitch_set,
-			double &yaw_set);
+		void feedback_control();
 		
 		void run();
 		void logging();

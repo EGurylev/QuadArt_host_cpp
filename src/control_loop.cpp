@@ -37,10 +37,10 @@ Loop::Loop() :
     logger.first.push_back("x");
     logger.first.push_back("y");
     logger.first.push_back("z");
-    logger.first.push_back("area");
-    logger.first.push_back("perimeter");
-    logger.first.push_back("min_diff");
+    logger.first.push_back("proj_error");
+    logger.first.push_back("is_pose_valid");
     
+    //Run telemetry data logging in a separate thread
     img_label.show();
     std::thread log_thread(&Loop::logging, this);
 	log_thread.detach();
@@ -65,15 +65,14 @@ void Loop::update()
 	pe_obj.calc_pose(Marker, pose_est);
 	
 	//Feedback control
-	double thrust_set, roll_set, pitch_set, yaw_set;
-	feedback_control(thrust_set, roll_set,
-			pitch_set, yaw_set);
+	feedback_control();
 	//Send command signals to crazyflie
-	if(thrust_eq <= 0)
+	/*if(thrust_eq <= 0)
 		thrust_eq = 0;
 	else
-		thrust_eq -= 200;
-	cf_obj.sendSetpoint(roll_set, pitch_set, yaw_set, thrust_eq);
+		thrust_eq -= 200;*/
+	cf_obj.sendSetpoint(control_set.roll, control_set.pitch,
+		control_set.yaw, 0);
 	
 	//Measure current time in ms
 	high_resolution_clock::time_point time_now = 
@@ -85,42 +84,52 @@ void Loop::update()
 	std::vector<double> log_slice;
 	log_slice.push_back(log_time);
 	log_slice.push_back(Marker->found);
-	log_slice.push_back(thrust_set);
-	log_slice.push_back(roll_set);
-	log_slice.push_back(pitch_set);
+	log_slice.push_back(control_set.thrust);
+	log_slice.push_back(control_set.roll);
+	log_slice.push_back(control_set.pitch);
 	log_slice.push_back(pose_meas.roll);
 	log_slice.push_back(pose_meas.pitch);
 	log_slice.push_back(pose_meas.yaw);
 	log_slice.push_back(pose_est.x);
 	log_slice.push_back(pose_est.y);
 	log_slice.push_back(pose_est.z);
-	log_slice.push_back(img_proc_obj.log_debug.area);
-	log_slice.push_back(img_proc_obj.log_debug.perimeter);
-	log_slice.push_back(img_proc_obj.log_debug.min_diff);
+	log_slice.push_back(pe_obj.log_debug.proj_error);
+	log_slice.push_back(pose_est.isvalid);
 	logger.second.push_back(log_slice);
 	
 }
 
-void Loop::feedback_control
-			(double &thrust_set, double &roll_set,
-			 double &pitch_set, double &yaw_set)
+void Loop::feedback_control()
 {
 	if(pose_est.isvalid)
 	{
-		thrust_set = z_controller.eval(-pose_est.z, 0);
-		thrust_set += thrust_eq;
-		pitch_set = x_controller.eval(pose_est.x, 0);
-		roll_set = -y_controller.eval(pose_est.y, 0);
-		yaw_set = 0;
+		control_set.thrust = 
+			static_cast<int>(z_controller.eval(-pose_est.z, 0)) +
+			thrust_eq;
+		//Clip thrust to valid range
+		if(control_set.thrust > control_set.thrust_max)
+			control_set.thrust = control_set.thrust_max;
+		if(control_set.thrust < 0)
+			control_set.thrust = 0;
+			
+		control_set.pitch = x_controller.eval(pose_est.x, 0);
+		control_set.roll = -y_controller.eval(pose_est.y, 0);
+		control_set.yaw = 0;
+		not_valid_count = 0;
 	}
 	else
 	{
-		thrust_set = 0;
-		pitch_set = 0;
-		roll_set = 0;
-		yaw_set = 0;
+		//Shut down if pose estimation is not valid
+		//during specified period measured in cycles
+		not_valid_count++;
+		if(not_valid_count >= not_valid_period)
+		{
+			control_set.thrust = 0;
+			control_set.pitch = 0;
+			control_set.roll = 0;
+			control_set.yaw = 0;
+		}
 	}
-	thrust_set = static_cast<int>(thrust_set);
 }
 
 void Loop::logging()
