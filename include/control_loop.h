@@ -4,12 +4,7 @@ Control loop interface
 
 #pragma once
 
-#include <QtCore/QObject>
-#include <QtGui/QImage>
-#include <QtCore/QString>
-#include <QtGui/QPainter>
-#include <QtWidgets/QLabel>
-#include <QtCore/QTimer>
+#include <thread>
 #include "common.h"
 #include "camera.h"
 #include "img_proc.h"
@@ -34,15 +29,30 @@ struct control
 	int thrust_max = 65000;
 };
 
-class Loop : public QObject
+class Timer
 {
-	Q_OBJECT
+	public:
+		Timer(double total_time) :
+			_execute(true),
+			_total_time(total_time){}
+
+		bool _execute;
+		void start(int interval, std::function<void(void)> func);
+		void stop();
+
 	private:
-		QTimer loop_timer;
+		double _total_time;
+		high_resolution_clock::time_point start_time, end_time;
+		double time = 0;
+};
+
+class Loop
+{
+	private:
+		double total_time = 10;//sec
 		Camera cam_obj;
 		uint8_t* img_p;
-		int timer_period = 10;
-		QLabel img_label;
+		int timer_period = 10000;//microsec
 		cv::Mat rvec, tvec;
 		img_proc img_proc_obj;
 		pose_estimator pe_obj;
@@ -63,6 +73,8 @@ class Loop : public QObject
 		Loop();
 		~Loop();
 		
+		Timer timer;
+
 		void feedback_control();
 		
 		void run();
@@ -70,7 +82,5 @@ class Loop : public QObject
 		void log_callback(uint32_t time_in_ms,
 			log_block* data);
 		void log2file();
-		
-	public slots:
         void update();
 };

@@ -1,14 +1,20 @@
 #include "control_loop.h"
-#include <QtWidgets/QApplication>
+#include <unistd.h>
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
+    //QApplication a(argc, argv);
     
     Loop loop_obj;
     
     loop_obj.run();
 
-    return a.exec();
+    //Do nothing until specified time passed
+    while(loop_obj.timer._execute)
+    {
+		usleep(10000);
+    }
+
+    return 0;
 }
 

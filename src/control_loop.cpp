@@ -3,28 +3,27 @@ Control loop implementation.
 */
 
 #include "control_loop.h"
-#include <thread>
 
 Loop::Loop() :
 	cf_obj("radio://0/80/250K"),
 	
 	z_controller(80, 30, 90, 0.35,
-		timer_period / 1000.0, 7000,
+		timer_period / 1e6, 7000,
 		-7000, true),
 		
 	x_controller(0.1, 0.01, 0.12, 0.15,
-		timer_period / 1000.0, 20,
+		timer_period / 1e6, 20,
 		-20, true),
 		
 	y_controller(0.1, 0.01, 0.12, 0.15,
-		timer_period / 1000.0, 20,
-		-20, true)
+		timer_period / 1e6, 20,
+		-20, true),
+		
+	timer(total_time)
 {
 	//Init start time
 	start_time = high_resolution_clock::now();
 	
-	QObject::connect(&loop_timer, SIGNAL(timeout()),
-    	this, SLOT(update()));
     //Log variables
     logger.first.push_back("time");
     logger.first.push_back("marker_found");
@@ -41,14 +40,13 @@ Loop::Loop() :
     logger.first.push_back("is_pose_valid");
     
     //Run telemetry data logging in a separate thread
-    img_label.show();
     std::thread log_thread(&Loop::logging, this);
 	log_thread.detach();
 }
 
 void Loop::run()
 {
-	loop_timer.start(timer_period);
+	timer.start(timer_period, std::bind(&Loop::update, this));
 }
 
 
@@ -199,6 +197,30 @@ void Loop::log2file()
 
 Loop::~Loop()
 {
-	loop_timer.stop();
 	log2file();
+}
+
+void Timer::start(int interval, std::function<void(void)> func)
+{
+	std::thread([=]()
+    {
+    	while (_execute)
+    	{
+    		start_time = high_resolution_clock::now();
+        	func();
+        	end_time = high_resolution_clock::now();
+        	int dt = static_cast<int>(duration_cast<microseconds>
+        		(end_time - start_time).count());
+        	int period;
+        	if(dt < interval)
+        		period = interval - dt; 
+        	else
+        		period = 0; 
+        	std::this_thread::sleep_for(
+        		std::chrono::microseconds(period));
+        	time += 0.01;
+        	if(time > _total_time)
+        		_execute = false;
+        }
+	}).detach();
 }
