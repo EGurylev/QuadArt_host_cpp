@@ -49,7 +49,7 @@ class Timer
 class Loop
 {
 	private:
-		double total_time = 10;//sec
+		double total_time = 15;//sec
 		Camera cam_obj;
 		uint8_t* img_p;
 		int timer_period = 10000;//microsec
@@ -60,7 +60,7 @@ class Loop
 		std::pair<std::vector<std::string>,
 			std::vector<std::vector<double>>> logger;
 		Crazyflie cf_obj;
-		int thrust_eq = 20000;
+		int thrust_eq = 42000;
 		high_resolution_clock::time_point start_time;
 		
 		int not_valid_count = 0;

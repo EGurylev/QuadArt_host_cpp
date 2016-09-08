@@ -31,7 +31,7 @@ void pose_estimator::calc_pose(marker *Marker, pose6D &pose_est)
 
 		pose_est.x = tvec.at<double>(0);
 		pose_est.y = tvec.at<double>(2);
-		pose_est.z = tvec.at<double>(1);
+		pose_est.z = -tvec.at<double>(1);
 
 		//Log debug variables
 		log_debug.proj_error = proj_error;

@@ -7,15 +7,15 @@ Control loop implementation.
 Loop::Loop() :
 	cf_obj("radio://0/80/250K"),
 	
-	z_controller(80, 30, 90, 0.35,
+	z_controller(80, 30, 70, 0.3,
 		timer_period / 1e6, 7000,
 		-7000, true),
 		
-	x_controller(0.1, 0.01, 0.12, 0.15,
+	x_controller(0.15, 0.05, 0.08, 0.15,
 		timer_period / 1e6, 20,
 		-20, true),
 		
-	y_controller(0.1, 0.01, 0.12, 0.15,
+	y_controller(0.15, 0.05, 0.08, 0.15,
 		timer_period / 1e6, 20,
 		-20, true),
 		
@@ -70,7 +70,7 @@ void Loop::update()
 	else
 		thrust_eq -= 200;*/
 	cf_obj.sendSetpoint(control_set.roll, control_set.pitch,
-		control_set.yaw, 0);
+		control_set.yaw, control_set.thrust);
 	
 	//Measure current time in ms
 	high_resolution_clock::time_point time_now = 
@@ -102,7 +102,7 @@ void Loop::feedback_control()
 	if(pose_est.isvalid)
 	{
 		control_set.thrust = 
-			static_cast<int>(z_controller.eval(-pose_est.z, 0)) +
+			static_cast<int>(z_controller.eval(pose_est.z, 20)) +
 			thrust_eq;
 		//Clip thrust to valid range
 		if(control_set.thrust > control_set.thrust_max)
@@ -110,8 +110,8 @@ void Loop::feedback_control()
 		if(control_set.thrust < 0)
 			control_set.thrust = 0;
 			
-		control_set.pitch = x_controller.eval(pose_est.x, 0);
-		control_set.roll = -y_controller.eval(pose_est.y, 0);
+		control_set.pitch = -x_controller.eval(pose_est.x, 0);
+		control_set.roll = -y_controller.eval(pose_est.y, 80);
 		control_set.yaw = 0;
 		not_valid_count = 0;
 	}
