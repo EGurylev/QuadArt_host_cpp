@@ -17,6 +17,7 @@ struct pose6D
 	double pitch = 0;
 	double yaw = 0;
 	bool isvalid = true;
+	double time_stamp = 0;
 };
 
 struct pose_debug

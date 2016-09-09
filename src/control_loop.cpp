@@ -8,14 +8,14 @@ Loop::Loop() :
 	cf_obj("radio://0/80/250K"),
 	
 	z_controller(80, 30, 70, 0.3,
-		timer_period / 1e6, 7000,
-		-7000, true),
+		timer_period / 1e6, 15000,
+		-15000, true),
 		
-	x_controller(0.15, 0.05, 0.08, 0.15,
+	x_controller(0.2, 0.05, 0.06, 0.15,
 		timer_period / 1e6, 20,
 		-20, true),
 		
-	y_controller(0.15, 0.05, 0.08, 0.15,
+	y_controller(0.2, 0.05, 0.05, 0.15,
 		timer_period / 1e6, 20,
 		-20, true),
 		
@@ -33,6 +33,7 @@ Loop::Loop() :
     logger.first.push_back("roll_cf");
     logger.first.push_back("pitch_cf");
     logger.first.push_back("yaw_cf");
+    logger.first.push_back("time_cf");
     logger.first.push_back("x");
     logger.first.push_back("y");
     logger.first.push_back("z");
@@ -83,11 +84,12 @@ void Loop::update()
 	log_slice.push_back(log_time);
 	log_slice.push_back(Marker->found);
 	log_slice.push_back(control_set.thrust);
-	log_slice.push_back(control_set.roll);
 	log_slice.push_back(control_set.pitch);
+	log_slice.push_back(control_set.roll);
 	log_slice.push_back(pose_meas.roll);
 	log_slice.push_back(pose_meas.pitch);
 	log_slice.push_back(pose_meas.yaw);
+	log_slice.push_back(pose_meas.time_stamp);
 	log_slice.push_back(pose_est.x);
 	log_slice.push_back(pose_est.y);
 	log_slice.push_back(pose_est.z);
@@ -148,7 +150,7 @@ void Loop::logging()
 	while(true)
 	{
 		cf_obj.sendPing();
-		std::this_thread::sleep_for(std::chrono::milliseconds(2));
+		std::this_thread::sleep_for(std::chrono::milliseconds(5));
 	}	 
 }
 
@@ -157,6 +159,7 @@ void Loop::log_callback(uint32_t time_in_ms, log_block* data)
 	pose_meas.roll = data->roll;
 	pose_meas.pitch = data->pitch;
 	pose_meas.yaw = data->yaw;
+	pose_meas.time_stamp = time_in_ms;
 }
 
 void Loop::log2file()
