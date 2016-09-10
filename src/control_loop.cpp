@@ -7,15 +7,15 @@ Control loop implementation.
 Loop::Loop() :
 	cf_obj("radio://0/80/250K"),
 	
-	z_controller(80, 30, 70, 0.3,
+	z_controller(80, 20, 60, 0.25,
 		timer_period / 1e6, 15000,
 		-15000, true),
 		
-	x_controller(0.2, 0.05, 0.06, 0.15,
+	x_controller(0.5, 0.2, 0.5, 0.25,
 		timer_period / 1e6, 20,
 		-20, true),
 		
-	y_controller(0.2, 0.05, 0.05, 0.15,
+	y_controller(0.1, 0.05, 0.1, 0.1,
 		timer_period / 1e6, 20,
 		-20, true),
 		
@@ -221,7 +221,7 @@ void Timer::start(int interval, std::function<void(void)> func)
         		period = 0; 
         	std::this_thread::sleep_for(
         		std::chrono::microseconds(period));
-        	time += 0.01;
+        	time += dt / 1e6;
         	if(time > _total_time)
         		_execute = false;
         }
