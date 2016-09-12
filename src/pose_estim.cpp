@@ -28,10 +28,26 @@ void pose_estimator::calc_pose(marker *Marker, pose6D &pose_est)
 
 		if(proj_error > proj_err_thresh)
 			pose_est.isvalid = false;
-
-		pose_est.x = tvec.at<double>(0);
+		
+		//Find CF's center of gravity
+		//Find angle between sides of a marker and z axis
+		double k1, k2, alpha;
+		if (Marker->corner_coord[1].y == Marker->corner_coord[3].y)
+			alpha = 0;
+		else
+		{
+			//Right side
+			k1 = (Marker->corner_coord[1].x - Marker->corner_coord[3].x) / 
+				(Marker->corner_coord[1].y - Marker->corner_coord[3].y);
+			//Left side
+			k2 = (Marker->corner_coord[0].x - Marker->corner_coord[2].x) / 
+				(Marker->corner_coord[0].y - Marker->corner_coord[2].y);
+			alpha = atan((k1 + k2) / 2);//average
+		}
+		
+		pose_est.x = tvec.at<double>(0) + dist2grav * sin(alpha);
+		pose_est.z = -(tvec.at<double>(1) + dist2grav * cos(alpha));
 		pose_est.y = tvec.at<double>(2);
-		pose_est.z = -tvec.at<double>(1);
 
 		//Log debug variables
 		log_debug.proj_error = proj_error;

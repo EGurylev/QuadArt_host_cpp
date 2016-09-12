@@ -7,11 +7,11 @@ Control loop implementation.
 Loop::Loop() :
 	cf_obj("radio://0/80/250K"),
 	
-	z_controller(80, 20, 60, 0.25,
+	z_controller(100, 20, 80, 0.25,
 		timer_period / 1e6, 15000,
 		-15000, true),
 		
-	x_controller(0.5, 0.2, 0.5, 0.25,
+	x_controller(0.7, 0.2, 0.5, 0.25,
 		timer_period / 1e6, 20,
 		-20, true),
 		
@@ -66,10 +66,6 @@ void Loop::update()
 	//Feedback control
 	feedback_control();
 	//Send command signals to crazyflie
-	/*if(thrust_eq <= 0)
-		thrust_eq = 0;
-	else
-		thrust_eq -= 200;*/
 	cf_obj.sendSetpoint(control_set.roll, control_set.pitch,
 		control_set.yaw, control_set.thrust);
 	
