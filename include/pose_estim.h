@@ -16,7 +16,7 @@ struct pose6D
 	double roll = 0;
 	double pitch = 0;
 	double yaw = 0;
-	bool isvalid = true;
+	bool isvalid = false;
 	double time_stamp = 0;
 };
 

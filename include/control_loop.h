@@ -12,6 +12,7 @@ Control loop interface
 #include "Crazyradio.h"
 #include "Crazyflie.h"
 #include "pid.h"
+#include "trajectory_sched.h"
 
 struct log_block
 {
@@ -49,7 +50,7 @@ class Timer
 class Loop
 {
 	private:
-		double total_time = 15;//sec
+		double total_time;//sec
 		Camera cam_obj;
 		uint8_t* img_p;
 		int timer_period = 10000;//microsec
@@ -69,6 +70,8 @@ class Loop
 		pid z_controller;
 		pid x_controller;
 		pid y_controller;
+		
+		trajectory_scheduler traject;
 	public:
 		Loop();
 		~Loop();

@@ -1,5 +1,11 @@
 /*
-Control loop implementation.
+Control loop implementation. Method update()
+runs periodically and invokes next tasks:
+	1. Image grabbing from camera.
+	2. Get marker during image processing.
+	3. Position calculation.
+	4. Calculate control signals and send them into quadrotor.
+	5. Log parameters.
 */
 
 #include "control_loop.h"
@@ -19,7 +25,7 @@ Loop::Loop() :
 		timer_period / 1e6, 20,
 		-20, true),
 		
-	timer(total_time)
+	timer(traject.get_end_time())
 {
 	//Init start time
 	start_time = high_resolution_clock::now();
@@ -98,9 +104,13 @@ void Loop::update()
 void Loop::feedback_control()
 {
 	if(pose_est.isvalid)
-	{
+	{			
+		//Get trajectory points
+		double x_desired, y_desired, z_desired;
+		traject.get_next_pos(x_desired, y_desired, z_desired);
+	
 		control_set.thrust = 
-			static_cast<int>(z_controller.eval(pose_est.z, 20)) +
+			static_cast<int>(z_controller.eval(pose_est.z, z_desired)) +
 			thrust_eq;
 		//Clip thrust to valid range
 		if(control_set.thrust > control_set.thrust_max)
@@ -108,8 +118,8 @@ void Loop::feedback_control()
 		if(control_set.thrust < 0)
 			control_set.thrust = 0;
 			
-		control_set.pitch = -x_controller.eval(pose_est.x, 0);
-		control_set.roll = -y_controller.eval(pose_est.y, 80);
+		control_set.pitch = -x_controller.eval(pose_est.x, x_desired);
+		control_set.roll = -y_controller.eval(pose_est.y, y_desired);
 		control_set.yaw = 0;
 		not_valid_count = 0;
 	}
