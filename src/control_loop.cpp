@@ -103,7 +103,7 @@ void Loop::update()
 
 void Loop::feedback_control()
 {
-	if(pose_est.isvalid)
+	if(pose_est.isvalid && is_ready)
 	{			
 		//Get trajectory points
 		double x_desired, y_desired, z_desired;
@@ -143,6 +143,8 @@ void Loop::logging()
 	//Recieve telemetry data from crazyflie
 	cf_obj.logReset();
 	cf_obj.requestLogToc();
+	//Now CF is ready for control signals
+	is_ready = true;
 	std::function<void(uint32_t, log_block*)> cb =
 		std::bind(&Loop::log_callback, this,
 		std::placeholders::_1, std::placeholders::_2);
