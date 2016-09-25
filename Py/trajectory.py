@@ -3,10 +3,14 @@ import matplotlib.pyplot as plt
 import sys
 import cv2
 import csv
+from scipy.spatial.distance import pdist, squareform
+
+#Dmitry Shintyakov shintyakov@gmail.com
+from tsp_solver.greedy_numpy import solve_tsp
 
 #### Approximate image by set of points
 
-N_pts = 20
+N_pts = 100
 x_range = 60.0 #cm
 
 img = cv2.imread('Odry.jpg')
@@ -39,6 +43,13 @@ points = points.astype('float')
 points[0] = points[0] * (x_range / x_size) - x_range / 2
 points[1] = -(points[1] * (y_range / y_size) - y_range / 2)
 
+#### Solve travelling salesman problem for optimal trajectory
+# Make symmetric distance matrix from points
+
+dist_matrix = squareform(pdist(points.T))
+path = solve_tsp(dist_matrix)
+#Reorder points according to optimal path
+points = points.T[path]
 
 #### Make trajectory and write it to file
 
@@ -55,13 +66,13 @@ x_t = np.array([])
 z_t = np.array([])
 num_rec_pt = int(time_for_point / dt)
 
-for point in points.T:
+for point in points:
 	x_i = point[0] * np.ones(num_rec_pt) 
 	z_i = point[1] * np.ones(num_rec_pt)
 	x_t = np.concatenate((x_t, x_i), axis=1)
 	z_t = np.concatenate((z_t, z_i), axis=1)
 	
-plt.plot(points[0], points[1], 'o')
+plt.plot(points.T[0], points.T[1], 'o')
 plt.axis('equal')
 
 # Form a data matrix in order to simplify writing into file
