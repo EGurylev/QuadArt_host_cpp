@@ -13,11 +13,11 @@ runs periodically and invokes next tasks:
 Loop::Loop() :
 	cf_obj("radio://0/80/250K"),
 	
-	z_controller(100, 20, 80, 0.25,
+	z_controller(120, 50, 90, 0.1,
 		timer_period / 1e6, 15000,
 		-15000, true),
 		
-	x_controller(0.7, 0.2, 0.5, 0.25,
+	x_controller(0.5, 0.2, 0.35, 0.25,
 		timer_period / 1e6, 20,
 		-20, true),
 		
@@ -43,6 +43,9 @@ Loop::Loop() :
     logger.first.push_back("x");
     logger.first.push_back("y");
     logger.first.push_back("z");
+    logger.first.push_back("x_set");
+    logger.first.push_back("y_set");
+    logger.first.push_back("z_set");
     logger.first.push_back("proj_error");
     logger.first.push_back("is_pose_valid");
     
@@ -95,6 +98,9 @@ void Loop::update()
 	log_slice.push_back(pose_est.x);
 	log_slice.push_back(pose_est.y);
 	log_slice.push_back(pose_est.z);
+	log_slice.push_back(x_desired);
+	log_slice.push_back(y_desired);
+	log_slice.push_back(z_desired);
 	log_slice.push_back(pe_obj.log_debug.proj_error);
 	log_slice.push_back(pose_est.isvalid);
 	logger.second.push_back(log_slice);
@@ -106,7 +112,6 @@ void Loop::feedback_control()
 	if(pose_est.isvalid && is_ready)
 	{			
 		//Get trajectory points
-		double x_desired, y_desired, z_desired;
 		traject.get_next_pos(x_desired, y_desired, z_desired);
 	
 		control_set.thrust = 

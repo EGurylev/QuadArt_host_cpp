@@ -66,6 +66,7 @@ class Loop
 		bool is_ready = false;
 		int not_valid_count = 0;
 		int not_valid_period = 10;
+		double x_desired, y_desired, z_desired;
 		control control_set;
 		pid z_controller;
 		pid x_controller;
