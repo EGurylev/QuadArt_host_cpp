@@ -10,7 +10,7 @@ from tsp_solver.greedy_numpy import solve_tsp
 
 #### Approximate image by set of points
 
-N_pts = 100
+N_pts = 10
 x_range = 60.0 #cm
 
 img = cv2.imread('Odry.jpg')
