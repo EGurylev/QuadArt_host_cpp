@@ -13,11 +13,11 @@ runs periodically and invokes next tasks:
 Loop::Loop() :
 	cf_obj("radio://0/80/250K"),
 	
-	z_controller(120, 50, 90, 0.1,
+	z_controller(130, 80, 90, 0.15,
 		timer_period / 1e6, 15000,
 		-15000, true),
 		
-	x_controller(0.5, 0.2, 0.35, 0.25,
+	x_controller(0.35, 0.5, 0.4, 0.25,
 		timer_period / 1e6, 20,
 		-20, true),
 		
@@ -48,6 +48,27 @@ Loop::Loop() :
     logger.first.push_back("z_set");
     logger.first.push_back("proj_error");
     logger.first.push_back("is_pose_valid");
+    
+    //Set ids for CF pid coefs
+    rate_pid_ids.roll.kp = 14;
+    rate_pid_ids.roll.ki = 15;
+    rate_pid_ids.roll.kd = 16;
+    rate_pid_ids.pitch.kp = 17;
+    rate_pid_ids.pitch.ki = 18;
+    rate_pid_ids.pitch.kd = 19;
+    rate_pid_ids.yaw.kp = 20;
+    rate_pid_ids.yaw.ki = 21;
+    rate_pid_ids.yaw.kd = 22;
+    attitude_pid_ids.roll.kp = 23;
+    attitude_pid_ids.roll.ki = 24;
+    attitude_pid_ids.roll.kd = 25;
+    attitude_pid_ids.pitch.kp = 26;
+    attitude_pid_ids.pitch.ki = 27;
+    attitude_pid_ids.pitch.kd = 28;
+    attitude_pid_ids.yaw.kp = 29;
+    attitude_pid_ids.yaw.ki = 30;
+    attitude_pid_ids.yaw.kd = 31;
+    
     
     //Run telemetry data logging in a separate thread
     std::thread log_thread(&Loop::logging, this);
@@ -148,6 +169,9 @@ void Loop::logging()
 	//Recieve telemetry data from crazyflie
 	cf_obj.logReset();
 	cf_obj.requestLogToc();
+	//Set pid parameters
+	cf_obj.requestParamToc();
+	cf_obj.setParam(attitude_pid_ids.pitch.kp, 5);
 	//Now CF is ready for control signals
 	is_ready = true;
 	std::function<void(uint32_t, log_block*)> cb =

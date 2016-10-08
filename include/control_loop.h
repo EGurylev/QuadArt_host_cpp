@@ -30,6 +30,20 @@ struct control
 	int thrust_max = 65000;
 };
 
+//Structures for holding pid coef's ids
+struct cf_pid_coef
+{
+	float kp;
+	float ki;
+	float kd;
+};
+struct cf_pid_param
+{
+	cf_pid_coef roll;
+	cf_pid_coef pitch;
+	cf_pid_coef yaw;
+};
+
 class Timer
 {
 	public:
@@ -71,6 +85,9 @@ class Loop
 		pid z_controller;
 		pid x_controller;
 		pid y_controller;
+		
+		cf_pid_param attitude_pid_ids;
+		cf_pid_param rate_pid_ids;
 		
 		trajectory_scheduler traject;
 	public:

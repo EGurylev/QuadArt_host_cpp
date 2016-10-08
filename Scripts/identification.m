@@ -47,15 +47,15 @@ pitch_cf_i = interp1(time_cf, pitch_cf, time_i)';
 pitch_set_i = interp1(time, pitch_set, time_i)';
 pitch_cf_i(isnan(pitch_cf_i)) = 0;% zero padding
 pitch_set_i(isnan(pitch_set_i)) = 0;% zero padding
-plot(time_i, pitch_set_i), hold on, grid on
-plot(time_i, pitch_cf_i, 'color', 'g', "LineWidth", 3)
+%plot(time_i, pitch_set_i), hold on, grid on
+%plot(time_i, pitch_cf_i, 'color', 'g', "LineWidth", 3)
 
 % Tune 2-nd order ARX model
-pitch_cf_dat = iddata(pitch_cf_i, pitch_set_i, dt);
-[Tm, x0] = arx(pitch_cf_dat, 2);
+%pitch_cf_dat = iddata(pitch_cf_i, pitch_set_i, dt);
+%[Tm, x0] = arx(pitch_cf_dat, 2);
 %step(Tm / dcgain(Tm), 'color', 'r'), hold on
-[y, t, x] = lsim(Tm, pitch_set_i, time_i);
-plot(t, y, 'color', 'black', "LineWidth", 3)
+%[y, t, x] = lsim(Tm, pitch_set_i, time_i);
+%plot(t, y, 'color', 'black', "LineWidth", 3)
 
 mass = 0.029;
 l = 0.045;
@@ -82,9 +82,9 @@ K = k1 * k2 * k3 * k4;
 % Settings for pitch rate pid
 pid_pitch_rate_kp = 250;
 pid_pitch_rate_ki = 0;
-pid_pitch_rate_kd = 2.5;
+pid_pitch_rate_kd = 0;
 % Settings for pitch pid
-pid_pitch_kp = 6;
+pid_pitch_kp = 20;
 pid_pitch_ki = 0;
 pid_pitch_kd = 0;
 
@@ -96,20 +96,46 @@ alpha = Kp * dtf;
 % Low-pass filter (CF firmware) for accelaration
 attenuation = freq / (2 * pi * 4);
 attenuation = int32(bitshift(1, 8) / attenuation + 0.5);
-tau = dt*((1-alpha)/alpha);
+tau = dt * ((1 - alpha) / alpha);
 lpfc = tf(alpha, [tau 1]);
 imu = parallel(lpfc, 1 - alpha);
+imu = 1; % filter dynamics should be neglected
 
-C1 = pid(pid_pitch_kp, pid_pitch_ki / dt, pid_pitch_kd * dt);
-C2 = pid(pid_pitch_rate_kp, pid_pitch_rate_ki / dt, pid_pitch_rate_kd * dt);
-
+% First inner loop (pitch rate)
 I = 1.4e-5;
 sys = tf(K / I, [1 0]);
-T = feedback(sys * C2);
-Tcl = feedback(imu * C1 * T * tf(1, [1 0]));
-[y1, t, x] = lsim (Tcl, pitch_set_i, time_i);
+C1 = pid(pid_pitch_rate_kp, pid_pitch_rate_ki / dt, pid_pitch_rate_kd * dt);
+OL1 = sys * C1;
+CL1 = feedback(OL1);
+
+% Second inner loop (pitch)
+C2 = pid(pid_pitch_kp, pid_pitch_ki / dt, pid_pitch_kd * dt);
+OL2 = imu * C2 * CL1 * tf(1, [1 0]);
+CL2 = feedback(OL2);
+%[y1, t, x] = lsim (CL2, pitch_set_i, time_i);
 %step(Tcl)
-plot(time_i, y1, 'color', 'r', "LineWidth", 3)
-legend('Pitch set', 'Pitch cf', 'Pitch arx', 'Pitch analytic')
-xlabel('time, sec')
-ylabel('Pitch, grad')
+%plot(time_i, y1, 'color', 'r', "LineWidth", 3)
+%legend('Pitch set', 'Pitch cf', 'Pitch arx', 'Pitch analytic')
+%xlabel('time, sec')
+%ylabel('Pitch, grad')
+
+% Outer loop (position x)
+dt_host = 0.01;
+pid_x_kp = 1;
+pid_x_ki = 0.2;
+pid_x_kd = 1.5;
+alpha = 0.05;
+tau = dt * ((1 - alpha) / alpha);
+lpfc3 = tf(1, [tau 1]);
+
+C3 = pid(pid_x_kp, pid_x_ki / dt_host, pid_x_kd * dt_host) * lpfc3;
+OL3 = CL2 * C3;
+CL3 = feedback(OL3);
+step(CL3)
+
+%x_real = data(3:end, find(strcmp(fieldnames, "x")));
+%x_set = data(3:end, find(strcmp(fieldnames, "x_set")));
+%[x_sim, t, x_] = lsim(T3, x_set, time);
+%plot(time, x_real), hold on
+%plot(time, x_set, 'g')
+%plot(time, x_sim, 'color', 'r', "LineWidth", 3)
