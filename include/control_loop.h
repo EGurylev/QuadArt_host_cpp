@@ -49,16 +49,16 @@ class Timer
 	public:
 		Timer(double total_time) :
 			_execute(true),
-			_total_time(total_time){}
+			total_time(total_time){}
 
 		bool _execute;
 		void start(int interval, std::function<void(void)> func);
 		void stop();
+		double time = 0;
+		double total_time;
 
 	private:
-		double _total_time;
 		high_resolution_clock::time_point start_time, end_time;
-		double time = 0;
 };
 
 class Loop
@@ -68,6 +68,9 @@ class Loop
 		Camera cam_obj;
 		uint8_t* img_p;
 		int timer_period = 10000;//microsec
+		double time_landing = 2;//sec
+		//time before timer ends for shut down
+		double time_shutdown = 0.5;
 		cv::Mat rvec, tvec;
 		img_proc img_proc_obj;
 		pose_estimator pe_obj;
@@ -85,11 +88,11 @@ class Loop
 		pid z_controller;
 		pid x_controller;
 		pid y_controller;
-		
 		cf_pid_param attitude_pid_ids;
 		cf_pid_param rate_pid_ids;
-		
 		trajectory_scheduler traject;
+
+		void shut_down();
 	public:
 		Loop();
 		~Loop();

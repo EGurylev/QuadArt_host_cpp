@@ -13,7 +13,7 @@ runs periodically and invokes next tasks:
 Loop::Loop() :
 	cf_obj("radio://0/80/250K"),
 	
-	z_controller(130, 80, 90, 0.15,
+	z_controller(140, 80, 90, 0.15,
 		timer_period / 1e6, 15000,
 		-15000, true),
 		
@@ -21,11 +21,11 @@ Loop::Loop() :
 		timer_period / 1e6, 20,
 		-20, true),
 		
-	y_controller(0.1, 0.05, 0.1, 0.1,
+	y_controller(0.1, 0.05, 0.1, 0.15,
 		timer_period / 1e6, 20,
 		-20, true),
 		
-	timer(traject.get_end_time())
+	timer(traject.get_end_time() + time_landing)
 {
 	//Init start time
 	start_time = high_resolution_clock::now();
@@ -130,8 +130,20 @@ void Loop::update()
 
 void Loop::feedback_control()
 {
-	if(pose_est.isvalid && is_ready)
-	{			
+	//Shutdown during landing
+	if (traject.is_landing && (timer.total_time - timer.time) < time_shutdown)
+	{
+		shut_down();
+	}
+	//Flight mode
+	else if(pose_est.isvalid && is_ready)
+	{
+		//Set position for landing as it was at launch
+		if (!traject.is_final_pos_set)
+		{
+			traject.set_final_position(pose_est.x, pose_est.y, pose_est.z);
+		}
+
 		//Get trajectory points
 		traject.get_next_pos(x_desired, y_desired, z_desired);
 	
@@ -149,6 +161,7 @@ void Loop::feedback_control()
 		control_set.yaw = 0;
 		not_valid_count = 0;
 	}
+	//Shutdown if marker isn't found
 	else
 	{
 		//Shut down if pose estimation is not valid
@@ -156,12 +169,18 @@ void Loop::feedback_control()
 		not_valid_count++;
 		if(not_valid_count >= not_valid_period)
 		{
-			control_set.thrust = 0;
-			control_set.pitch = 0;
-			control_set.roll = 0;
-			control_set.yaw = 0;
+			shut_down();
 		}
 	}
+}
+
+void Loop::shut_down()
+{
+	control_set.thrust = 0;
+	control_set.pitch = 0;
+	control_set.roll = 0;
+	control_set.yaw = 0;
+	std::cout << "Shut down!" << std::endl;
 }
 
 void Loop::logging()
@@ -174,6 +193,13 @@ void Loop::logging()
 	cf_obj.setParam(attitude_pid_ids.pitch.kp, 5);
 	//Now CF is ready for control signals
 	is_ready = true;
+	//Init time must be added to timer
+	high_resolution_clock::time_point time_now =
+		high_resolution_clock::now();
+	double time_init = static_cast<double>(duration_cast<microseconds>
+		(time_now - start_time).count());
+	timer.total_time += time_init / 1e6;
+
 	std::function<void(uint32_t, log_block*)> cb =
 		std::bind(&Loop::log_callback, this,
 		std::placeholders::_1, std::placeholders::_2);
@@ -251,16 +277,16 @@ void Timer::start(int interval, std::function<void(void)> func)
         	end_time = high_resolution_clock::now();
         	int dt = static_cast<int>(duration_cast<microseconds>
         		(end_time - start_time).count());
-        	int period;
+			int sleep_period;
         	if(dt < interval)
-        		period = interval - dt; 
-        	else
-        		period = 0; 
-        	std::this_thread::sleep_for(
-        		std::chrono::microseconds(period));
-        	time += dt / 1e6;
-        	if(time > _total_time)
-        		_execute = false;
+				sleep_period = interval - dt;
+			else
+				sleep_period = 0;
+			std::this_thread::sleep_for(
+				std::chrono::microseconds(sleep_period));
+			time += (dt + sleep_period) / 1e6;
+			if(time > total_time)
+				_execute = false;
         }
 	}).detach();
 }

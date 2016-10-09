@@ -22,6 +22,14 @@ trajectory_scheduler::trajectory_scheduler()
 	reader.close();
 }
 
+void trajectory_scheduler::set_final_position(double &x, double &y, double &z)
+{
+	x_final = x;
+	y_final = y;
+	z_final = z;
+	is_final_pos_set = true;
+}
+
 void trajectory_scheduler::get_next_pos(double &x, double &y, double &z)
 {
 	if(rec_counter < num_rec)
@@ -34,9 +42,10 @@ void trajectory_scheduler::get_next_pos(double &x, double &y, double &z)
 	//get last trajectory point
 	else
 	{
-		x = x_vec[num_rec - 1];
-		y = y_vec[num_rec - 1];
-		z = z_vec[num_rec - 1];
+		x = x_final;
+		y = y_final;
+		z = z_final;
+		is_landing = true;
 	}
 }
 
