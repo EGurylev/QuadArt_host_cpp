@@ -10,7 +10,7 @@ struct marker
 	friend class img_proc;
 	private:
 		double area_prev;
-		double perimeter_prev = 160;
+		double perimeter_prev = 140;
 		int size;
 		bool found_prev = false;
 	public:

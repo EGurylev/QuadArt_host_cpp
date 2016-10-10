@@ -10,10 +10,13 @@ from tsp_solver.greedy_numpy import solve_tsp
 
 #### Approximate image by set of points
 
-N_pts = 10
-x_range = 60.0 #cm
+N_pts_flight = 50
+N_flights = 10
+N_pts = N_flights * N_pts_flight
 
-img = cv2.imread('Odry.jpg')
+x_range = 75.0 #cm
+
+img = cv2.imread('linux.jpg')
 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 #Vanish light regions
 gray[gray > 125] = 255
@@ -58,9 +61,9 @@ time_for_point = 2 #sec
 total_time = time_for_point * N_pts
 num_rec = int(total_time / dt)
 
-time_t = np.linspace(0, total_time, num_rec)
+
 # Y coordinate is constant
-y_t = 80 * np.ones((1, num_rec))
+y_t = 90 * np.ones((num_rec))
 
 x_t = np.array([])
 z_t = np.array([])
@@ -72,22 +75,25 @@ for point in points:
 	x_t = np.concatenate((x_t, x_i), axis=1)
 	z_t = np.concatenate((z_t, z_i), axis=1)
 	
+time_t = np.linspace(0, time_for_point * N_pts_flight, N_pts_flight * num_rec_pt)
+
 plt.plot(points.T[0], points.T[1], 'o')
 plt.axis('equal')
 
-# Form a data matrix in order to simplify writing into file
-file_name = 'trajectory'
-keys = ['time', 'x', 'y', 'z']
-matrix_h = num_rec
-matrix_w = len(keys)
-data_matrix = np.zeros((matrix_h, matrix_w))
-data_matrix[:, 0] = time_t
-data_matrix[:, 1] = x_t
-data_matrix[:, 2] = y_t
-data_matrix[:, 3] = z_t
-with open(file_name, 'wb') as csvfile:
-    writer = csv.writer(csvfile, delimiter=' ')
-    writer.writerow([matrix_h])# number of records for reader    
-    #writer.writerow(keys)# header row
-    for log_slice in xrange(matrix_h):
-        writer.writerow(data_matrix[log_slice,:])
+# Form a data matrix in order to simplify writing into files
+for n in xrange(N_flights):
+	file_name = 'trajectory_' + str(n)
+	keys = ['time', 'x', 'y', 'z']
+	matrix_h = N_pts_flight * num_rec_pt
+	matrix_w = len(keys)
+	data_matrix = np.zeros((matrix_h, matrix_w))
+	data_matrix[:, 0] = time_t
+	data_matrix[:, 1] = x_t[num_rec_pt * n * N_pts_flight : num_rec_pt * (n + 1) * N_pts_flight]
+	data_matrix[:, 2] = y_t[num_rec_pt * n * N_pts_flight : num_rec_pt * (n + 1) * N_pts_flight]
+	data_matrix[:, 3] = z_t[num_rec_pt * n * N_pts_flight : num_rec_pt * (n + 1) * N_pts_flight]
+	with open(file_name, 'wb') as csvfile:
+		writer = csv.writer(csvfile, delimiter=' ')
+		writer.writerow([matrix_h])# number of records for reader
+		#writer.writerow(keys)# header row
+		for log_slice in xrange(matrix_h):
+		    writer.writerow(data_matrix[log_slice,:])
