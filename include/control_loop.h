@@ -13,6 +13,7 @@ Control loop interface
 #include "Crazyflie.h"
 #include "pid.h"
 #include "trajectory_sched.h"
+#include "observer.h"
 
 struct log_block
 {
@@ -74,7 +75,7 @@ class Loop
 		cv::Mat rvec, tvec;
 		img_proc img_proc_obj;
 		pose_estimator pe_obj;
-		pose6D pose_est, pose_meas;
+		pose6D pose_est, pose_meas, pose_obs;
 		std::pair<std::vector<std::string>,
 			std::vector<std::vector<double>>> logger;
 		Crazyflie cf_obj;
@@ -88,6 +89,7 @@ class Loop
 		pid z_controller;
 		pid x_controller;
 		pid y_controller;
+		observer x_observer;
 		cf_pid_param attitude_pid_ids;
 		cf_pid_param rate_pid_ids;
 		trajectory_scheduler traject;

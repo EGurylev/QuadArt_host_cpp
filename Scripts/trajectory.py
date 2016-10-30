@@ -10,8 +10,8 @@ from tsp_solver.greedy_numpy import solve_tsp
 
 #### Approximate image by set of points
 
-N_pts_flight = 50
-N_flights = 10
+N_pts_flight = 20
+N_flights = 1
 N_pts = N_flights * N_pts_flight
 
 x_range = 75.0 #cm

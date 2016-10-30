@@ -17,9 +17,11 @@ LDFLAGS   += $(shell pkg-config --libs opencv)
 LDFLAGS   += -lm -lusb-1.0
 LDLIBS    += -L/usr/local/lib
 
-$(NAME): main.o control_loop.o camera.o img_proc.o pose_estim.o Crazyflie.o Crazyradio.o trajectory_sched.o pid.o
+$(NAME): main.o control_loop.o camera.o img_proc.o pose_estim.o Crazyflie.o Crazyradio.o trajectory_sched.o pid.o observer.o
 	$(CXX) -o $@ $^ $(LDFLAGS)  $(LDLIBS)
 Crazyflie.o: Crazyflie.cpp
+	$(CXX) $(CPPFLAGS) -c $<
+observer.o: observer.cpp
 	$(CXX) $(CPPFLAGS) -c $<
 Crazyradio.o: Crazyradio.cpp
 	$(CXX) $(CPPFLAGS) -c $<
@@ -39,5 +41,5 @@ main.o: main.cpp
 	$(CXX) $(CPPFLAGS) -c $<
 	
 clean:
-	$(RM) $(NAME).o $(NAME) control_loop.o camera.o main.o img_proc.o pose_estim.o Crazyflie.o Crazyradio.o pid.o trajectory_sched.o
+	$(RM) $(NAME).o $(NAME) control_loop.o camera.o main.o img_proc.o pose_estim.o Crazyflie.o Crazyradio.o pid.o trajectory_sched.o observer.o
 	

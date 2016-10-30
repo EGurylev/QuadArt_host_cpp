@@ -4,7 +4,7 @@ pkg load control
 % for pitch control channel
 
 % Read log file_in_loadpath
-filename = "Log_Mon Sep 26 19:00:24 2016.csv";
+filename = "sine_pitch1.csv";
 
 data = csvread(filename);
 num_rec = size(data, 1) - 2;
@@ -18,6 +18,9 @@ pitch_cf = data(3:end, find(strcmp(fieldnames, "pitch_cf")));
 roll_cf = data(3:end, find(strcmp(fieldnames, "roll_cf")));
 pitch_set = data(3:end, find(strcmp(fieldnames, "pitch_set")));
 roll_set = data(3:end, find(strcmp(fieldnames, "roll_set")));
+x_set = data(3:end, find(strcmp(fieldnames, "x_set")));
+x = data(3:end, find(strcmp(fieldnames, "x")));
+z = data(3:end, find(strcmp(fieldnames, "z")));
 
 % Synchronize time from PC with time from CF
 % Find moment in time when cf is connected and send real data
@@ -37,16 +40,21 @@ pitch_cf = pitch_cf(mask);
 
 % Interpolate data
 freq = 500;%Hz
-dt = 1 / freq;
-time_i = 0:dt:time(end);
+dt_cf = 1 / freq;
+dt_host = 0.01;
+time_i = 0:dt_host:time(end);
 
 [time_cf, i_before, i_after] = unique(time_cf);
 pitch_cf = pitch_cf(i_before);
 
 pitch_cf_i = interp1(time_cf, pitch_cf, time_i)';
 pitch_set_i = interp1(time, pitch_set, time_i)';
+x_i = interp1(time, x, time_i)';
+x_i(isnan(x_i)) = 0;% zero padding
 pitch_cf_i(isnan(pitch_cf_i)) = 0;% zero padding
 pitch_set_i(isnan(pitch_set_i)) = 0;% zero padding
+
+
 %plot(time_i, pitch_set_i), hold on, grid on
 %plot(time_i, pitch_cf_i, 'color', 'g', "LineWidth", 3)
 
@@ -57,61 +65,7 @@ pitch_set_i(isnan(pitch_set_i)) = 0;% zero padding
 %[y, t, x] = lsim(Tm, pitch_set_i, time_i);
 %plot(t, y, 'color', 'black', "LineWidth", 3)
 
-mass = 0.029;
-l = 0.045;
-g = 9.81;
-# Lookup tables for thrust
-pwm_table = 650 * [0,6.25,12.5,18.75,25,31.25,37.5,43.25,50,56.25, ...
-    62.5,68.75,75,81.25,87.5,93.75]; # in cf's thrust control range
-rpm_table = [0,4485,7570,9374,10885,12277,13522,14691,15924,17174, ...
-    18179,19397,20539,21692,22598,23882]; # revolutions per minute
-thrust_table = [0,1.6,4.8,7.9,10.9,13.9,17.3,21.0,24.4,28.6,32.8, ...
-    37.3,41.7,46.0,51.9,57.9] / 1e3; # kg
 
-# Calc. rpm and pwm output for equilibrium point   
-rpm_eq = interp1(thrust_table, rpm_table, mass);
-pwm_eq = interp1(rpm_table, pwm_table, rpm_eq);
-
-k1 = rpm_eq / pwm_eq;
-k2 = mass * g / rpm_eq;
-k3 = 2 * l;
-k4 = 180 / pi;
-K = k1 * k2 * k3 * k4;
-
-% Cascade pid controllers
-% Settings for pitch rate pid
-pid_pitch_rate_kp = 250;
-pid_pitch_rate_ki = 0;
-pid_pitch_rate_kd = 0;
-% Settings for pitch pid
-pid_pitch_kp = 20;
-pid_pitch_ki = 0;
-pid_pitch_kd = 0;
-
-% Complementary (Mahony) filter
-Kp = 0.4;
-dtf = 1 / 250;
-% Coefficient for accelaration imu data
-alpha = Kp * dtf;
-% Low-pass filter (CF firmware) for accelaration
-attenuation = freq / (2 * pi * 4);
-attenuation = int32(bitshift(1, 8) / attenuation + 0.5);
-tau = dt * ((1 - alpha) / alpha);
-lpfc = tf(alpha, [tau 1]);
-imu = parallel(lpfc, 1 - alpha);
-imu = 1; % filter dynamics should be neglected
-
-% First inner loop (pitch rate)
-I = 1.4e-5;
-sys = tf(K / I, [1 0]);
-C1 = pid(pid_pitch_rate_kp, pid_pitch_rate_ki / dt, pid_pitch_rate_kd * dt);
-OL1 = sys * C1;
-CL1 = feedback(OL1);
-
-% Second inner loop (pitch)
-C2 = pid(pid_pitch_kp, pid_pitch_ki / dt, pid_pitch_kd * dt);
-OL2 = imu * C2 * CL1 * tf(1, [1 0]);
-CL2 = feedback(OL2);
 %[y1, t, x] = lsim (CL2, pitch_set_i, time_i);
 %step(Tcl)
 %plot(time_i, y1, 'color', 'r', "LineWidth", 3)
@@ -119,19 +73,7 @@ CL2 = feedback(OL2);
 %xlabel('time, sec')
 %ylabel('Pitch, grad')
 
-% Outer loop (position x)
-dt_host = 0.01;
-pid_x_kp = 1;
-pid_x_ki = 0.2;
-pid_x_kd = 1.5;
-alpha = 0.05;
-tau = dt * ((1 - alpha) / alpha);
-lpfc3 = tf(1, [tau 1]);
 
-C3 = pid(pid_x_kp, pid_x_ki / dt_host, pid_x_kd * dt_host) * lpfc3;
-OL3 = CL2 * C3;
-CL3 = feedback(OL3);
-step(CL3)
 
 %x_real = data(3:end, find(strcmp(fieldnames, "x")));
 %x_set = data(3:end, find(strcmp(fieldnames, "x_set")));
@@ -139,3 +81,134 @@ step(CL3)
 %plot(time, x_real), hold on
 %plot(time, x_set, 'g')
 %plot(time, x_sim, 'color', 'r', "LineWidth", 3)
+
+%%% Analytical model from "DESIGN OF A TRAJECTORY TRACKING CONTROLLER FOR A NANOQUADCOPTER" 2016
+%I = 1.4e-05;% Moment of inertia
+%Ct = 3.1582e-10;% thrust coefficient
+%d = 39.73e-3;% Arm length
+%g = 9.81;
+%mass = 0.029; % kg
+%we = sqrt(mass * g / (4 * Ct)); %equilibrium rpm
+%k1 = 0.2685; %PWM to PRM
+%k2 = 180 / pi;
+%K = k1 * k2 * we * 2 * sqrt(2) * d * Ct / I;
+%sys1 = tf(K, [1 0]);
+%
+%% First inner loop (pitch rate)
+%C1 = pid(pid_pitch_rate_kp, pid_pitch_rate_ki / dt, pid_pitch_rate_kd * dt);
+%OL1 = sys1 * C1;
+%CL1 = feedback(OL1);
+%
+%% Second inner loop (pitch)
+%C2 = pid(pid_pitch_kp, pid_pitch_ki / dt, pid_pitch_kd * dt);
+%OL2 = C2 * CL1 * tf(1, [1 0]);
+%CL2 = feedback(OL2);
+
+
+%step(CL3)
+
+% Tune 2-nd order ARX model;
+
+
+%time_i(idx) = [];
+%pitch_cf_i(idx) = [];
+%z_i(isnan(z_i)) = 0;% zero padding
+%
+%x_trig = x_i != 0;
+%x_trig_d = diff(x_trig);
+%x0 = x_i(find(x_trig_d, 1) + 1);
+%
+%x_i -= x0;
+%idx = pitch_cf_i == 0;
+%x_i(idx) = 0;
+
+
+%
+
+
+
+% Inner loops: pitch rate and pitch
+
+% Cascade pid controllers
+% Settings for pitch rate pid
+pid_pitch_rate_kp = 250;
+pid_pitch_rate_ki = 0;
+pid_pitch_rate_kd = 0;
+% Settings for pitch pid
+pid_pitch_kp = 5;
+pid_pitch_ki = 0;
+pid_pitch_kd = 0;
+
+pitch_dat = iddata(pitch_cf_i, pitch_set_i, dt_host);
+[Tp, x0] = arx(pitch_dat, 2);
+Tpc = tf(d2c(Tp));
+
+[pitch_sim, t, i] = lsim(Tpc, pitch_set_i, time_i);
+% Normilize dc gain to 1
+Tpc /= dcgain(Tpc);
+% Remove neglegible zero from transfer function
+[num,den] = tfdata(Tpc);
+num{1}(1) = [];
+Tpc = tf(num, den);
+
+% Calculate system model's dc gain
+K_sys = num{1} / (pid_pitch_rate_kp * pid_pitch_kp);
+
+% System model
+sys = tf(K_sys, [1 0]);
+%First inner loop (pitch rate)
+C1 = pid(pid_pitch_rate_kp, pid_pitch_rate_ki / dt_cf, pid_pitch_rate_kd * dt_cf);
+CL1 = feedback(sys * C1);
+% Second inner loop (pitch)
+C2 = pid(pid_pitch_kp, pid_pitch_ki / dt_cf, pid_pitch_kd * dt_cf);
+CL2 = feedback(CL1 * C2 * tf(1, [1 0]));
+
+a1 = subplot(2,1,1);
+plot(time_i, pitch_set_i), hold on
+plot(time_i, pitch_cf_i, 'g')
+plot(time_i, pitch_sim, 'r')
+
+
+% Outer loop (position x)
+%pid_x_kp = 0.35;
+%pid_x_ki = 0.5;
+%pid_x_kd = 0.40;
+%alpha = 0.25;
+%tau = dt_host * ((1 - alpha) / alpha);
+%lpfc3 = tf(1, [tau 1]);
+%%lpfc3 = 1;
+%C3 = pid(pid_x_kp, pid_x_ki / dt_host, pid_x_kd * dt_host) * lpfc3;
+%
+%sys2 = tf(500, [6 20 0]);
+%
+%OL3 = C3 * sys2;
+%CL3 = feedback(OL3);
+
+
+g = 9.81;
+sys_x = -tf((pi / 180) * g * 100, [1 1 0]) * CL2;
+[x_sim, t, i] = lsim(sys_x, pitch_set_i, time_i);
+
+a2 = subplot(2,1,2);
+plot(time, x), hold on
+plot(time_i, x_sim, 'r')
+
+%% Kalman filter for x position
+% Convert model do discrete state space form
+model_x = ss(c2d(sys_x, dt_host));
+A = model_x.a;
+B = model_x.b;
+C = model_x.c;
+L = 1e-3 * ones(4, 1);
+
+% State vector
+N = numel(time_i);
+X = zeros(4, N);
+for n = 2:N
+    Y = C * X(:, n - 1);
+    X(:, n) = A * X(:, n - 1) + L * (x_i(n - 1) - Y) + B * pitch_set_i(n - 1);
+end
+
+plot(time_i, X(4, :), 'g')
+
+%[m, p, z, e] = dlqe(a, g, c, q, r)

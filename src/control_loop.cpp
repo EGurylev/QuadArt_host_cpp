@@ -17,7 +17,7 @@ Loop::Loop() :
 		timer_period / 1e6, 15000,
 		-15000, true),
 		
-	x_controller(0.35, 0.5, 0.4, 0.25,
+	x_controller(0.55, 0.45, 0.5, 0.7,
 		timer_period / 1e6, 20,
 		-20, true),
 		
@@ -46,6 +46,7 @@ Loop::Loop() :
     logger.first.push_back("x_set");
     logger.first.push_back("y_set");
     logger.first.push_back("z_set");
+    logger.first.push_back("x_obs");
     logger.first.push_back("proj_error");
     logger.first.push_back("is_pose_valid");
     
@@ -93,6 +94,9 @@ void Loop::update()
 	//marker in camera coordinate system
 	pe_obj.calc_pose(Marker, pose_est);
 	
+	//State observer (x position)
+	pose_obs.x = x_observer.update(pose_est.x, control_set.pitch, pose_est.isvalid);
+
 	//Feedback control
 	feedback_control();
 	//Send command signals to crazyflie
@@ -122,6 +126,7 @@ void Loop::update()
 	log_slice.push_back(x_desired);
 	log_slice.push_back(y_desired);
 	log_slice.push_back(z_desired);
+	log_slice.push_back(pose_obs.x);
 	log_slice.push_back(pe_obj.log_debug.proj_error);
 	log_slice.push_back(pose_est.isvalid);
 	logger.second.push_back(log_slice);
@@ -156,7 +161,7 @@ void Loop::feedback_control()
 		if(control_set.thrust < 0)
 			control_set.thrust = 0;
 			
-		control_set.pitch = -x_controller.eval(pose_est.x, x_desired);
+		control_set.pitch = -x_controller.eval(pose_obs.x, x_desired);
 		control_set.roll = -y_controller.eval(pose_est.y, y_desired);
 		control_set.yaw = 0;
 		not_valid_count = 0;
@@ -190,7 +195,8 @@ void Loop::logging()
 	cf_obj.requestLogToc();
 	//Set pid parameters
 	cf_obj.requestParamToc();
-	cf_obj.setParam(attitude_pid_ids.pitch.kp, 5);
+	cf_obj.setParam(attitude_pid_ids.pitch.kp, 6);
+	cf_obj.setParam(rate_pid_ids.pitch.kp, 280);
 	//Now CF is ready for control signals
 	is_ready = true;
 	//Init time must be added to timer
