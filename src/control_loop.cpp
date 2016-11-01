@@ -21,9 +21,13 @@ Loop::Loop() :
 		timer_period / 1e6, 20,
 		-20, true),
 		
-	y_controller(0.1, 0.05, 0.1, 0.15,
+	y_controller(0.2, 0.1, 0.2, 0.4,
 		timer_period / 1e6, 20,
 		-20, true),
+		
+	x_observer("x_observer"),
+	
+	y_observer("y_observer"),
 		
 	timer(traject.get_end_time() + time_landing)
 {
@@ -47,6 +51,7 @@ Loop::Loop() :
     logger.first.push_back("y_set");
     logger.first.push_back("z_set");
     logger.first.push_back("x_obs");
+    logger.first.push_back("y_obs");
     logger.first.push_back("proj_error");
     logger.first.push_back("is_pose_valid");
     
@@ -94,8 +99,9 @@ void Loop::update()
 	//marker in camera coordinate system
 	pe_obj.calc_pose(Marker, pose_est);
 	
-	//State observer (x position)
+	//State observer (x and y position)
 	pose_obs.x = x_observer.update(pose_est.x, control_set.pitch, pose_est.isvalid);
+	pose_obs.y = y_observer.update(pose_est.y, control_set.roll, pose_est.isvalid);
 
 	//Feedback control
 	feedback_control();
@@ -127,6 +133,7 @@ void Loop::update()
 	log_slice.push_back(y_desired);
 	log_slice.push_back(z_desired);
 	log_slice.push_back(pose_obs.x);
+	log_slice.push_back(pose_obs.y);
 	log_slice.push_back(pe_obj.log_debug.proj_error);
 	log_slice.push_back(pose_est.isvalid);
 	logger.second.push_back(log_slice);
@@ -162,7 +169,7 @@ void Loop::feedback_control()
 			control_set.thrust = 0;
 			
 		control_set.pitch = -x_controller.eval(pose_obs.x, x_desired);
-		control_set.roll = -y_controller.eval(pose_est.y, y_desired);
+		control_set.roll = -y_controller.eval(pose_obs.y, y_desired);
 		control_set.yaw = 0;
 		not_valid_count = 0;
 	}

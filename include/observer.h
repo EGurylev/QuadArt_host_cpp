@@ -4,7 +4,7 @@
 class observer
 {
 	public:
-		observer();
+		observer(std::string filename);
 		double update(double measured, double input, bool isvalid);
 	private:
 		int N;//number of states

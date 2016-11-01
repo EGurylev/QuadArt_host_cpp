@@ -89,7 +89,7 @@ class Loop
 		pid z_controller;
 		pid x_controller;
 		pid y_controller;
-		observer x_observer;
+		observer x_observer, y_observer;
 		cf_pid_param attitude_pid_ids;
 		cf_pid_param rate_pid_ids;
 		trajectory_scheduler traject;

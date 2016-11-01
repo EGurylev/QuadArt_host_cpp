@@ -7,10 +7,10 @@ It initialized from text file.
 
 #include "observer.h"
 
-observer::observer()
+observer::observer(std::string filename)
 {
 	
-	std::ifstream reader("observer");
+	std::ifstream reader(filename);
 	reader >> N;//number of states
 	
 	x = cv::Mat::zeros(N, 1, CV_64F);

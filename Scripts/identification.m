@@ -19,6 +19,7 @@ pitch_set = data(3:end, find(strcmp(fieldnames, "pitch_set")));
 roll_set = data(3:end, find(strcmp(fieldnames, "roll_set")));
 x_set = data(3:end, find(strcmp(fieldnames, "x_set")));
 x = data(3:end, find(strcmp(fieldnames, "x")));
+y = data(3:end, find(strcmp(fieldnames, "y")));
 z = data(3:end, find(strcmp(fieldnames, "z")));
 
 % Synchronize time from PC with time from CF
@@ -48,11 +49,16 @@ pitch_cf = pitch_cf(i_before);
 
 pitch_cf_i = interp1(time_cf, pitch_cf, time_i)';
 pitch_set_i = interp1(time, pitch_set, time_i)';
+roll_set_i = interp1(time, roll_set, time_i)';
 x_i = interp1(time, x, time_i)';
+y_i = interp1(time, y, time_i)';
 x_i(isnan(x_i)) = 0;% zero padding
+y_i(isnan(y_i)) = 0;% zero padding
+roll_set_i(isnan(roll_set_i)) = 0;% zero padding
 pitch_cf_i(isnan(pitch_cf_i)) = 0;% zero padding
 pitch_set_i(isnan(pitch_set_i)) = 0;% zero padding
 
+%% Pitch model
 
 % Inner loop for pitch control.
 % It consits of two cascade pid controllers
@@ -113,16 +119,62 @@ model_x = ss(c2d(sys_x, dt_host));
 A = model_x.a;
 B = model_x.b;
 C = model_x.c;
-[est, L, x] = kalman(model_x, 2, 0.1e-1);
+[est, Lp, x] = kalman(model_x, 2, 0.1e-1);
+
+% Save observer into file
+fileID = fopen('x_observer','w');
+% Number of states
+fprintf(fileID, '%d\n', size(A, 1));
+fprintf(fileID, "%i\n", A');
+fprintf(fileID, "%i\n", B');
+fprintf(fileID, "%i\n", C');
+fprintf(fileID, "%i\n", Lp);
+fclose(fileID);
 
 N = numel(time_i);
 % State vector
 X = zeros(4, N);
 for n = 2:N
     Y = C * X(:, n - 1);
-    X(:, n) = A * X(:, n - 1) + L * (x_i(n - 1) - Y) + B * pitch_set_i(n - 1);
+    X(:, n) = A * X(:, n - 1) + Lp * (x_i(n - 1) - Y) + B * pitch_set_i(n - 1);
 end
 
 plot(time_i, X(4, :), 'g')
 xlabel('time, sec'), ylabel('x position, cm'), grid on
 legend('x measured', 'x model', 'x with Kalman filter')
+
+%% Roll model
+% pid settings are the same as for pitch channel
+% let's assume the same model and tune only Kalman gain
+
+[est, Lr, x] = kalman(model_x, 2, 0.2);
+
+% Save observer into file
+fileID = fopen('y_observer','w');
+% Number of states
+fprintf(fileID, '%d\n', size(A, 1));
+fprintf(fileID, "%i\n", A');
+fprintf(fileID, "%i\n", B');
+fprintf(fileID, "%i\n", C');
+fprintf(fileID, "%i\n", Lr);
+fclose(fileID);
+
+N = numel(time_i);
+% State vector
+X = zeros(4, N);
+for n = 2:N
+    Y = C * X(:, n - 1);
+    X(:, n) = A * X(:, n - 1) + Lr * (y_i(n - 1) - Y) + B * roll_set_i(n - 1);
+end
+
+figure
+a3 = subplot(2,1,1);
+plot(time_i, roll_set_i)
+xlabel('time, sec'), ylabel('Angle, deg'), grid on
+legend('Roll set')
+a4 = subplot(2,1,2);
+plot(time_i, y_i), hold on
+plot(time_i, X(4, :), 'g')
+xlabel('time, sec'), ylabel('y position, cm'), grid on
+legend('y measured', 'y with Kalman filter')
+linkaxes([a3 a4], 'x')
