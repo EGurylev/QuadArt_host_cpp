@@ -5,12 +5,14 @@ import cv2
 import csv
 from scipy.spatial.distance import pdist, squareform
 
+plt.ion()
+
 #Dmitry Shintyakov shintyakov@gmail.com
 from tsp_solver.greedy_numpy import solve_tsp
 
 #### Approximate image by set of points
 
-N_pts_flight = 20
+N_pts_flight = 15
 N_flights = 1
 N_pts = N_flights * N_pts_flight
 

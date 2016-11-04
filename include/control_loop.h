@@ -79,7 +79,7 @@ class Loop
 		std::pair<std::vector<std::string>,
 			std::vector<std::vector<double>>> logger;
 		Crazyflie cf_obj;
-		int thrust_eq = 36000;
+		int thrust_eq = 39000;
 		high_resolution_clock::time_point start_time;
 		bool is_ready = false;
 		int not_valid_count = 0;
@@ -89,7 +89,7 @@ class Loop
 		pid z_controller;
 		pid x_controller;
 		pid y_controller;
-		observer x_observer, y_observer;
+		observer x_observer, y_observer, z_observer;
 		cf_pid_param attitude_pid_ids;
 		cf_pid_param rate_pid_ids;
 		trajectory_scheduler traject;

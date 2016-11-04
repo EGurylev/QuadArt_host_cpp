@@ -13,21 +13,23 @@ runs periodically and invokes next tasks:
 Loop::Loop() :
 	cf_obj("radio://0/80/250K"),
 	
-	z_controller(140, 80, 90, 0.15,
-		timer_period / 1e6, 15000,
-		-15000, true),
+	z_controller(260, 120, 200, 0.6,
+		timer_period / 1e6, 17000,
+		-17000, true),
 		
-	x_controller(0.55, 0.45, 0.5, 0.7,
-		timer_period / 1e6, 20,
-		-20, true),
+	x_controller(0.6, 0.15, 0.4, 0.8,
+		timer_period / 1e6, 25,
+		-25, true),
 		
-	y_controller(0.2, 0.1, 0.2, 0.4,
-		timer_period / 1e6, 20,
-		-20, true),
+	y_controller(0.2, 0.05, 0.15, 0.5,
+		timer_period / 1e6, 25,
+		-25, true),
 		
 	x_observer("x_observer"),
 	
 	y_observer("y_observer"),
+	
+	z_observer("z_observer"),
 		
 	timer(traject.get_end_time() + time_landing)
 {
@@ -52,6 +54,7 @@ Loop::Loop() :
     logger.first.push_back("z_set");
     logger.first.push_back("x_obs");
     logger.first.push_back("y_obs");
+    logger.first.push_back("z_obs");
     logger.first.push_back("proj_error");
     logger.first.push_back("is_pose_valid");
     
@@ -99,9 +102,15 @@ void Loop::update()
 	//marker in camera coordinate system
 	pe_obj.calc_pose(Marker, pose_est);
 	
-	//State observer (x and y position)
+	//State observer (separate channels for x, y and z)
 	pose_obs.x = x_observer.update(pose_est.x, control_set.pitch, pose_est.isvalid);
 	pose_obs.y = y_observer.update(pose_est.y, control_set.roll, pose_est.isvalid);
+	//Observer for z position has to account equilibrium command signal. It must
+	//be took off from command signal if it is greater than zero (flying mode)
+	if (control_set.thrust > 0)
+		pose_obs.z = z_observer.update(pose_est.z, control_set.thrust - thrust_eq, pose_est.isvalid);
+	else
+		pose_obs.z = z_observer.update(pose_est.z, control_set.thrust, pose_est.isvalid);
 
 	//Feedback control
 	feedback_control();
@@ -134,6 +143,7 @@ void Loop::update()
 	log_slice.push_back(z_desired);
 	log_slice.push_back(pose_obs.x);
 	log_slice.push_back(pose_obs.y);
+	log_slice.push_back(pose_obs.z);
 	log_slice.push_back(pe_obj.log_debug.proj_error);
 	log_slice.push_back(pose_est.isvalid);
 	logger.second.push_back(log_slice);
@@ -160,7 +170,7 @@ void Loop::feedback_control()
 		traject.get_next_pos(x_desired, y_desired, z_desired);
 	
 		control_set.thrust = 
-			static_cast<int>(z_controller.eval(pose_est.z, z_desired)) +
+			static_cast<int>(z_controller.eval(pose_obs.z, z_desired)) +
 			thrust_eq;
 		//Clip thrust to valid range
 		if(control_set.thrust > control_set.thrust_max)
@@ -202,8 +212,8 @@ void Loop::logging()
 	cf_obj.requestLogToc();
 	//Set pid parameters
 	cf_obj.requestParamToc();
-	cf_obj.setParam(attitude_pid_ids.pitch.kp, 6);
-	cf_obj.setParam(rate_pid_ids.pitch.kp, 280);
+	//cf_obj.setParam(attitude_pid_ids.pitch.kp, 1);//this doesn't set param. Why?
+	//cf_obj.setParam(rate_pid_ids.pitch.kp, 50);
 	//Now CF is ready for control signals
 	is_ready = true;
 	//Init time must be added to timer
