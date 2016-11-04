@@ -93,6 +93,8 @@ class Loop
 		cf_pid_param attitude_pid_ids;
 		cf_pid_param rate_pid_ids;
 		trajectory_scheduler traject;
+		std::thread log_thread;
+		bool stop_thread = false; // Super simple thread stopping.
 
 		void shut_down();
 	public:

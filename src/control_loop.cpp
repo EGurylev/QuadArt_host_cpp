@@ -11,6 +11,9 @@ runs periodically and invokes next tasks:
 #include "control_loop.h"
 
 Loop::Loop() :
+
+	log_thread(&Loop::logging, this),
+
 	cf_obj("radio://0/80/250K"),
 	
 	z_controller(260, 120, 200, 0.6,
@@ -77,11 +80,6 @@ Loop::Loop() :
     attitude_pid_ids.yaw.kp = 29;
     attitude_pid_ids.yaw.ki = 30;
     attitude_pid_ids.yaw.kd = 31;
-    
-    
-    //Run telemetry data logging in a separate thread
-    std::thread log_thread(&Loop::logging, this);
-	log_thread.detach();
 }
 
 void Loop::run()
@@ -233,11 +231,11 @@ void Loop::logging()
 	stabilizer_log.start(1);//every 10 ms
     
     //Infinite loop in order to log data
-	while(true)
+	while(!stop_thread)
 	{
 		cf_obj.sendPing();
 		std::this_thread::sleep_for(std::chrono::milliseconds(5));
-	}	 
+	}
 }
 
 void Loop::log_callback(uint32_t time_in_ms, log_block* data)
@@ -287,6 +285,8 @@ void Loop::log2file()
 Loop::~Loop()
 {
 	log2file();
+	stop_thread = true;
+	log_thread.join();
 }
 
 void Timer::start(int interval, std::function<void(void)> func)
