@@ -12,13 +12,13 @@ from tsp_solver.greedy_numpy import solve_tsp
 
 #### Approximate image by set of points
 
-N_pts_flight = 3
-N_flights = 1
+N_pts_flight = 50
+N_flights = 5
 N_pts = N_flights * N_pts_flight
 
 x_range = 75.0 #cm
 
-img = cv2.imread('linux.jpg')
+img = cv2.imread('dove.jpg')
 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 #Vanish light regions
 gray[gray > 125] = 255

@@ -2,7 +2,7 @@ pkg load control
 
 %% Identify model for pitch/roll dynamics and tune observer gain
 
-% Read log file_in_loadpath
+% Read log file
 filename = "sine_pitch1.csv";
 
 data = csvread(filename);
