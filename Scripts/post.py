@@ -33,6 +33,7 @@ time_cf = data_matrix[:, field_names.index('time_cf')]#in
 marker_found = data_matrix[:, field_names.index('marker_found')]
 thrust_set = data_matrix[:, field_names.index('thrust_set')]
 is_pose_valid = data_matrix[:, field_names.index('is_pose_valid')]
+proj_error = data_matrix[:, field_names.index('proj_error')]
 
 x = data_matrix[:, field_names.index('x')]
 y = data_matrix[:, field_names.index('y')]
@@ -77,12 +78,13 @@ z_set[np.isnan(z_set)] = 0
 	
 plt.figure()
 ax1 = plt.subplot(2,1,1)
-ax1.plot(time_cf, pitch_cf)
-ax1.plot(time, pitch_set)
+#ax1.plot(time_cf, pitch_cf)
+ax1.plot(time[0:6000], proj_error[0:6000])
+ax1.plot(time[0:6000], is_pose_valid[0:6000])
 ax2 = plt.subplot(2,1,2, sharex=ax1)
-ax2.plot(time, x)
-ax2.plot(time, x_set)
-ax2.plot(time, x_obs)
+ax2.plot(time[0:6000], x[0:6000])
+ax2.plot(time[0:6000], x_set[0:6000])
+ax2.plot(time[0:6000], x_obs[0:6000])
 
 dx_set = np.diff(x_set)
 idx = dx_set != 0

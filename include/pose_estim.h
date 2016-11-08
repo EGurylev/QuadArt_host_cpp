@@ -30,7 +30,7 @@ class pose_estimator
 	private:
 		double l = 3.0;//length of a marker in cm
 		double dist2grav = 3.5;//distance from center of marker to center of gravity
-		double proj_err_thresh = 6;
+		double proj_err_thresh = 10;
 		std::vector<cv::Point3f> object_points = 
 			{ cv::Point3f(-l/2, -l/2, 0),
 			  cv::Point3f( l/2, -l/2, 0),

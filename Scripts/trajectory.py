@@ -77,6 +77,11 @@ for point in points:
 	x_t = np.concatenate((x_t, x_i), axis=1)
 	z_t = np.concatenate((z_t, z_i), axis=1)
 	
+# Replace second point with first: duration of first step now twice long
+# in order to compensate big step change
+x_i[num_rec_pt:2*num_rec_pt-1] = points[0][0]
+z_i[num_rec_pt:2*num_rec_pt-1] = points[0][1]
+
 time_t = np.linspace(0, time_for_point * N_pts_flight, N_pts_flight * num_rec_pt)
 
 plt.plot(points.T[0], points.T[1], 'o')

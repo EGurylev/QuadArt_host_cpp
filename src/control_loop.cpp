@@ -16,11 +16,11 @@ Loop::Loop() :
 
 	cf_obj("radio://0/80/250K"),
 	
-	z_controller(200, 110, 170, 0.6,
+	z_controller(200, 110, 230, 0.6,
 		timer_period / 1e6, 17000,
 		-17000, true),
 		
-	x_controller(0.35, 0.2, 0.25, 0.7,
+	x_controller(0.35, 0.2, 0.25, 0.6,
 		timer_period / 1e6, 25,
 		-25, true),
 		
