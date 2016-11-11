@@ -16,7 +16,7 @@ N_pts_flight = 50
 N_flights = 5
 N_pts = N_flights * N_pts_flight
 
-x_range = 75.0 #cm
+x_range = 60.0 #cm
 
 img = cv2.imread('dove.jpg')
 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -65,7 +65,7 @@ num_rec = int(total_time / dt)
 
 
 # Y coordinate is constant
-y_t = 90 * np.ones((num_rec))
+y_t = 80 * np.ones((num_rec))
 
 x_t = np.array([])
 z_t = np.array([])
@@ -77,10 +77,6 @@ for point in points:
 	x_t = np.concatenate((x_t, x_i), axis=1)
 	z_t = np.concatenate((z_t, z_i), axis=1)
 	
-# Replace second point with first: duration of first step now twice long
-# in order to compensate big step change
-x_i[num_rec_pt:2*num_rec_pt-1] = points[0][0]
-z_i[num_rec_pt:2*num_rec_pt-1] = points[0][1]
 
 time_t = np.linspace(0, time_for_point * N_pts_flight, N_pts_flight * num_rec_pt)
 
@@ -98,6 +94,11 @@ for n in xrange(N_flights):
 	data_matrix[:, 1] = x_t[num_rec_pt * n * N_pts_flight : num_rec_pt * (n + 1) * N_pts_flight]
 	data_matrix[:, 2] = y_t[num_rec_pt * n * N_pts_flight : num_rec_pt * (n + 1) * N_pts_flight]
 	data_matrix[:, 3] = z_t[num_rec_pt * n * N_pts_flight : num_rec_pt * (n + 1) * N_pts_flight]
+	# Replace second point with first: duration of first step now twice long
+	# in order to compensate big step change
+	data_matrix[num_rec_pt:2*num_rec_pt, 1] = x_t[num_rec_pt * n * N_pts_flight]
+	data_matrix[num_rec_pt:2*num_rec_pt, 3] = z_t[num_rec_pt * n * N_pts_flight]
+	
 	with open(file_name, 'wb') as csvfile:
 		writer = csv.writer(csvfile, delimiter=' ')
 		writer.writerow([matrix_h])# number of records for reader
