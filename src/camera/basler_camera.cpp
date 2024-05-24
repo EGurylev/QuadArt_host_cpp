@@ -2,9 +2,7 @@
 
 namespace camera {
 
-BaslerCamera::BaslerCamera()
-    : camera{Pylon::CTlFactory::GetInstance().CreateFirstDevice()} {
-    camera.StartGrabbing(Pylon::GrabStrategy_OneByOne);
+BaslerCamera::BaslerCamera() {
     thread = std::jthread(&BaslerCamera::process, this);
 }
 
@@ -15,7 +13,13 @@ void BaslerCamera::subscribe(std::shared_ptr<IImageObserver> observer) {
 void BaslerCamera::process() {
     using namespace Pylon;
 
+    Pylon::PylonAutoInitTerm autoInitTerm;
+    camera.Attach(Pylon::CTlFactory::GetInstance().CreateFirstDevice());
+    camera.StartGrabbing(Pylon::GrabStrategy_OneByOne);
+
     CGrabResultPtr ptrGrabResult;
+    std::cout << "Using device " << camera.GetDeviceInfo().GetModelName()
+              << std::endl;
 
     while (camera.IsGrabbing()) {
         camera.RetrieveResult(5000, ptrGrabResult,
