@@ -18,6 +18,9 @@ void BaslerCamera::process() {
     camera.StartGrabbing(Pylon::GrabStrategy_OneByOne);
 
     CGrabResultPtr ptrGrabResult;
+    Pylon::CImageFormatConverter formatConverter;             // me
+    formatConverter.OutputPixelFormat = PixelType_BGR8packed; // me
+    Pylon::CPylonImage pylonImage;                            // me
     std::cout << "Using device " << camera.GetDeviceInfo().GetModelName()
               << std::endl;
 
@@ -32,10 +35,11 @@ void BaslerCamera::process() {
             std::cout << "Gray value of first pixel: "
                       << (uint32_t)image_buffer[0] << std::endl
                       << std::endl;
+            formatConverter.Convert(pylonImage, ptrGrabResult); // me
             for (auto &subsciber : subscribers) {
-                subsciber->update(ImageView{image_buffer,
-                                            ptrGrabResult->GetWidth(),
-                                            ptrGrabResult->GetHeight()});
+                subsciber->update(ImageView{
+                    static_cast<uint8_t *>(pylonImage.GetBuffer()),
+                    ptrGrabResult->GetWidth(), ptrGrabResult->GetHeight()});
             }
         }
     }
